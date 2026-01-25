@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useComposeCast } from '@coinbase/onchainkit/minikit';
 import { minikitConfig } from "../../minikit.config";
@@ -11,8 +11,29 @@ function SuccessContent() {
   const score = parseInt(searchParams.get('score') || '0');
   const total = parseInt(searchParams.get('total') || '5');
   const percentage = Math.round((score / total) * 100);
+  const [timeToNext, setTimeToNext] = useState('');
 
   const { composeCastAsync } = useComposeCast();
+
+  // Update countdown timer every second
+  useEffect(() => {
+    const updateTimer = () => {
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setHours(24, 0, 0, 0);
+
+      const diff = tomorrow.getTime() - now.getTime();
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setTimeToNext(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Get performance message based on score
   const getPerformanceMessage = () => {
@@ -78,6 +99,30 @@ function SuccessContent() {
             <br />
             You scored {percentage}% on the crypto basics quiz!
           </p>
+
+          {/* Next Quiz Timer */}
+          <div style={{
+            marginTop: '25px',
+            marginBottom: '25px',
+            padding: '20px',
+            backgroundColor: '#fff8f0',
+            borderRadius: '12px',
+            border: '2px solid #FF6B35',
+            boxShadow: '0 4px 12px rgba(255,107,53,0.2)'
+          }}>
+            <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#666', fontWeight: '600' }}>
+              NEXT QUIZ IN
+            </p>
+            <div style={{
+              fontSize: '36px',
+              fontWeight: 'bold',
+              color: '#FF6B35',
+              fontFamily: 'monospace',
+              letterSpacing: '2px'
+            }}>
+              {timeToNext || '00:00:00'}
+            </div>
+          </div>
 
           <button onClick={handleShare} className={styles.shareButton}>
             SHARE YOUR SCORE
