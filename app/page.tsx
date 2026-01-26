@@ -38,6 +38,15 @@ export default function Home() {
       }
 
       const data = await getUserData(fid, username);
+
+      // Update username if it changed (fixes TestUser issue)
+      if (data.username !== username) {
+        data.username = username;
+        // Import saveUserData dynamically to avoid circular dependency
+        const { saveUserData } = await import('./userData');
+        await saveUserData(data);
+      }
+
       setUserData(data);
 
       // Load daily questions
@@ -100,10 +109,6 @@ export default function Home() {
   if (view === 'dashboard') {
     return (
       <div className={styles.container}>
-        <button className={styles.closeButton} type="button">
-          ✕
-        </button>
-
         <div className={styles.content}>
           <Dashboard userData={userData} onStartQuiz={handleStartQuiz} />
         </div>
@@ -117,10 +122,6 @@ export default function Home() {
 
   return (
     <div className={styles.container}>
-      <button className={styles.closeButton} type="button">
-        ✕
-      </button>
-
       <div className={styles.content}>
         <div className={styles.waitlistForm}>
           <h1 className={styles.title}>{minikitConfig.miniapp.name}</h1>

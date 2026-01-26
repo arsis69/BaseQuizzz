@@ -3,8 +3,15 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useComposeCast } from '@coinbase/onchainkit/minikit';
+import { useSendCalls } from 'wagmi';
+import { Attribution } from 'ox/erc8021';
 import { minikitConfig } from "../../minikit.config";
 import styles from "./page.module.css";
+
+// Builder Code attribution suffix
+const DATA_SUFFIX = Attribution.toDataSuffix({
+  codes: ["bc_7tz4s96h"],
+});
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -14,6 +21,9 @@ function SuccessContent() {
   const [timeToNext, setTimeToNext] = useState('');
 
   const { composeCastAsync } = useComposeCast();
+  const { sendCalls } = useSendCalls();
+  const [transactionSent, setTransactionSent] = useState(false);
+  const [transactionPending, setTransactionPending] = useState(false);
 
   // Update countdown timer every second
   useEffect(() => {
@@ -65,12 +75,38 @@ function SuccessContent() {
     }
   };
 
+  const handleClaimAchievement = async () => {
+    try {
+      setTransactionPending(true);
+
+      // Send a simple transaction with builder code attribution
+      // This is a minimal value transaction to record the achievement onchain
+      await sendCalls({
+        calls: [
+          {
+            to: "0x0000000000000000000000000000000000000000", // Null address for achievement record
+            value: BigInt(0), // No value, just attribution
+            data: "0x" as `0x${string}`, // Empty data
+          },
+        ],
+        capabilities: {
+          dataSuffix: {
+            value: DATA_SUFFIX,
+            optional: true,
+          },
+        },
+      });
+
+      setTransactionSent(true);
+      setTransactionPending(false);
+    } catch (error) {
+      console.error("Error claiming achievement:", error);
+      setTransactionPending(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
-      <button className={styles.closeButton} type="button">
-        ✕
-      </button>
-
       <div className={styles.content}>
         <div className={styles.successMessage}>
           {/* Score Display */}
@@ -127,6 +163,56 @@ function SuccessContent() {
           <button onClick={handleShare} className={styles.shareButton}>
             SHARE YOUR SCORE
           </button>
+
+          {!transactionSent && (
+            <button
+              onClick={handleClaimAchievement}
+              disabled={transactionPending}
+              style={{
+                marginTop: '15px',
+                padding: '16px 30px',
+                backgroundColor: transactionPending ? '#ccc' : '#28a745',
+                border: 'none',
+                borderRadius: '12px',
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: transactionPending ? 'not-allowed' : 'pointer',
+                width: '100%',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 12px rgba(40,167,69,0.3)',
+              }}
+              onMouseEnter={(e) => {
+                if (!transactionPending) {
+                  e.currentTarget.style.backgroundColor = '#218838';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!transactionPending) {
+                  e.currentTarget.style.backgroundColor = '#28a745';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }
+              }}
+            >
+              {transactionPending ? 'CLAIMING...' : '🏆 CLAIM ACHIEVEMENT ONCHAIN'}
+            </button>
+          )}
+
+          {transactionSent && (
+            <div style={{
+              marginTop: '15px',
+              padding: '16px',
+              backgroundColor: '#d4edda',
+              borderRadius: '12px',
+              border: '2px solid #28a745',
+              textAlign: 'center',
+              color: '#155724',
+              fontWeight: 'bold'
+            }}>
+              ✅ Achievement Claimed Onchain!
+            </div>
+          )}
 
           <button
             onClick={() => window.location.href = '/'}
