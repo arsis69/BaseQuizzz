@@ -49,7 +49,7 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
           {playedToday ? (
             <>
               <span className={styles.buttonIcon}>⏰</span>
-              <span>Come Back Tomorrow</span>
+              <span>Come Back in 1 Minute</span>
             </>
           ) : (
             <>
@@ -61,7 +61,7 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
 
         {playedToday && (
           <p className={styles.nextQuizHint}>
-            New questions available in 24 hours
+            New questions available in 1 minute (TEST MODE)
           </p>
         )}
 

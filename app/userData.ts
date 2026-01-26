@@ -237,8 +237,17 @@ function earnBadge(badges: Badge[], badgeId: string): void {
   }
 }
 
+// TEST MODE: Check if 1 minute has passed (change back to date check for production)
 export function hasPlayedToday(userData: UserStats): boolean {
-  return userData.lastQuizDate === getTodayString();
+  // For testing: allow quiz every 1 minute based on last quiz timestamp
+  const lastAttempt = userData.quizHistory[userData.quizHistory.length - 1];
+  if (!lastAttempt) return false;
+
+  const oneMinuteAgo = Date.now() - (1 * 60 * 1000); // 1 minute in ms
+  return lastAttempt.timestamp > oneMinuteAgo;
+
+  // Production code (uncomment for 24h reset):
+  // return userData.lastQuizDate === getTodayString();
 }
 
 export function getAccuracy(userData: UserStats): number {

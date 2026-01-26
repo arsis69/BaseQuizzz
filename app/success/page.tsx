@@ -28,19 +28,23 @@ function SuccessContent() {
     },
   ];
 
-  // Update countdown timer every second
+  // Update countdown timer every second (TEST MODE: 1 minute countdown)
   useEffect(() => {
     const updateTimer = () => {
+      // TEST MODE: Show countdown to next minute
       const now = new Date();
-      const tomorrow = new Date(now);
-      tomorrow.setHours(24, 0, 0, 0);
+      const secondsRemaining = 60 - now.getSeconds();
 
-      const diff = tomorrow.getTime() - now.getTime();
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      setTimeToNext(`00:00:${secondsRemaining.toString().padStart(2, '0')}`);
 
-      setTimeToNext(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      // Production code (uncomment for 24h reset):
+      // const tomorrow = new Date(now);
+      // tomorrow.setHours(24, 0, 0, 0);
+      // const diff = tomorrow.getTime() - now.getTime();
+      // const hours = Math.floor(diff / (1000 * 60 * 60));
+      // const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      // const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+      // setTimeToNext(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
     };
 
     updateTimer();
