@@ -99,7 +99,10 @@ function SuccessContent() {
       const supportsPaymaster = baseCapabilities?.paymasterService?.supported;
 
       // Build capabilities object
-      const txCapabilities: any = {
+      const txCapabilities: {
+        dataSuffix: { value: string; optional: boolean };
+        paymasterService?: { url: string };
+      } = {
         dataSuffix: {
           value: DATA_SUFFIX,
           optional: true,
