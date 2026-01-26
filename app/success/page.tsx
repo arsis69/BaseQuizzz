@@ -7,7 +7,7 @@ import { useSendCalls } from 'wagmi';
 import { Attribution } from 'ox/erc8021';
 import { encodeFunctionData } from 'viem';
 import { minikitConfig } from "../../minikit.config";
-import { CHECKIN_CONTRACT_ABI, CHECKIN_CONTRACT_ADDRESS, BASE_PAYMASTER_ADDRESS } from "../contracts/checkInContract";
+import { CHECKIN_CONTRACT_ABI, CHECKIN_CONTRACT_ADDRESS } from "../contracts/checkInContract";
 import styles from "./page.module.css";
 
 // Builder Code attribution suffix
