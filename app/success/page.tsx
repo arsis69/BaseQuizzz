@@ -149,7 +149,6 @@ function SuccessContent() {
             <Transaction
               chainId={8453}
               calls={calls}
-              isSponsored={true}
             >
               <div style={{
                 padding: '18px 30px',
