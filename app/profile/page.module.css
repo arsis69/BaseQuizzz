@@ -146,14 +146,20 @@
   transform: scale(0.98);
 }
 
-.statIcon {
-  font-size: 2rem;
-  margin-bottom: 0.75rem;
-  filter: drop-shadow(0 2px 8px rgba(255, 107, 53, 0.2));
+.statIconWrapper {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.1) 0%, rgba(255, 133, 85, 0.1) 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(255, 107, 53, 0.12);
 }
 
 .statValue {
-  font-size: 2.25rem;
+  font-size: 2rem;
   font-weight: 800;
   background: linear-gradient(135deg, #FF6B35 0%, #FF8555 100%);
   background-clip: text;
@@ -165,7 +171,7 @@
 }
 
 .statLabel {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #888;
   font-weight: 600;
   text-transform: uppercase;

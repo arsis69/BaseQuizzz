@@ -27,6 +27,7 @@ function SuccessContent() {
   const { sendCalls } = useSendCalls();
   const [transactionSent, setTransactionSent] = useState(false);
   const [transactionPending, setTransactionPending] = useState(false);
+  const [transactionError, setTransactionError] = useState<string | null>(null);
 
   // Update countdown timer every second
   useEffect(() => {
@@ -81,6 +82,7 @@ function SuccessContent() {
   const handleClaimAchievement = async () => {
     try {
       setTransactionPending(true);
+      setTransactionError(null);
 
       // Encode the checkIn function call
       const checkInData = encodeFunctionData({
@@ -116,6 +118,7 @@ function SuccessContent() {
     } catch (error) {
       console.error("Error claiming achievement:", error);
       setTransactionPending(false);
+      setTransactionError('Transaction failed. You may have already checked in today, or there was a network error. Your score is still saved!');
     }
   };
 
@@ -220,6 +223,22 @@ function SuccessContent() {
               animation: 'scaleIn 0.4s ease-out'
             }}>
               ✅ Daily Check-In Complete! Streak Recorded Onchain!
+            </div>
+          )}
+
+          {transactionError && (
+            <div style={{
+              marginTop: '15px',
+              padding: '16px',
+              background: '#fff3cd',
+              borderRadius: '12px',
+              border: '2px solid #ffc107',
+              textAlign: 'center',
+              color: '#856404',
+              fontSize: '14px',
+              lineHeight: '1.5'
+            }}>
+              ⚠️ {transactionError}
             </div>
           )}
         </div>

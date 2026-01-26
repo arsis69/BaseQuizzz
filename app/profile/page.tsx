@@ -1,9 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useAccount } from '@coinbase/onchainkit/minikit';
+import { useMiniKit } from '@coinbase/onchainkit/minikit';
+import Image from 'next/image';
 import BottomNav from '../components/BottomNav';
 import styles from './page.module.css';
+
+interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  earned: boolean;
+  earnedDate?: string;
+}
 
 interface UserStats {
   username: string;
@@ -13,52 +23,50 @@ interface UserStats {
   currentStreak: number;
   longestStreak: number;
   lastQuizDate: string;
-  achievements: string[];
+  badges: Badge[];
 }
 
 export default function Profile() {
-  const { address } = useAccount();
+  const { context } = useMiniKit();
   const [stats, setStats] = useState<UserStats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadUserStats() {
-      if (!address) {
-        setLoading(false);
-        return;
+      let fid = 999999; // Default for local testing
+      let username = 'TestUser';
+
+      if (context?.user) {
+        fid = context.user.fid;
+        username = context.user.displayName || context.user.username || 'User';
       }
 
       try {
-        const { loadUserData } = await import('../userData');
-        const data = await loadUserData(address);
+        const { getUserData, getAccuracy } = await import('../userData');
+        const data = await getUserData(fid, username);
 
-        // Calculate achievements
-        const achievements = [];
-        if (data.totalQuizzes >= 1) achievements.push('First Steps');
-        if (data.totalQuizzes >= 10) achievements.push('Quiz Master');
-        if (data.totalQuizzes >= 50) achievements.push('Century Club');
-        if (data.accuracy >= 80) achievements.push('Accuracy Expert');
-        if (data.accuracy === 100 && data.totalQuizzes >= 5) achievements.push('Perfect Scholar');
+        const accuracy = getAccuracy(data);
 
         setStats({
           username: data.username || 'Crypto Explorer',
           totalQuizzes: data.totalQuizzes || 0,
           correctAnswers: data.correctAnswers || 0,
-          accuracy: data.accuracy || 0,
+          accuracy: accuracy || 0,
           currentStreak: data.currentStreak || 0,
           longestStreak: data.longestStreak || 0,
           lastQuizDate: data.lastQuizDate || 'Never',
-          achievements,
+          badges: data.badges || [],
         });
       } catch (error) {
         console.error('Error loading user stats:', error);
+        setStats(null);
       } finally {
         setLoading(false);
       }
     }
 
     loadUserStats();
-  }, [address]);
+  }, [context]);
 
   if (loading) {
     return (
@@ -108,39 +116,47 @@ export default function Profile() {
         {/* Main Stats Grid */}
         <div className={styles.statsGrid}>
           <div className={styles.statCard}>
-            <div className={styles.statIcon}>🎯</div>
+            <div className={styles.statIconWrapper}>
+              <Image src="/trophy.png" alt="Trophy" width={32} height={32} />
+            </div>
             <div className={styles.statValue}>{stats.totalQuizzes}</div>
             <div className={styles.statLabel}>Total Quizzes</div>
           </div>
 
           <div className={styles.statCard}>
-            <div className={styles.statIcon}>✅</div>
+            <div className={styles.statIconWrapper}>
+              <Image src="/bolt.png" alt="Correct" width={32} height={32} />
+            </div>
             <div className={styles.statValue}>{stats.correctAnswers}</div>
-            <div className={styles.statLabel}>Correct Answers</div>
+            <div className={styles.statLabel}>Correct</div>
           </div>
 
           <div className={styles.statCard}>
-            <div className={styles.statIcon}>📈</div>
+            <div className={styles.statIconWrapper}>
+              <Image src="/diamond.png" alt="Accuracy" width={32} height={32} />
+            </div>
             <div className={styles.statValue}>{stats.accuracy}%</div>
             <div className={styles.statLabel}>Accuracy</div>
           </div>
 
           <div className={styles.statCard}>
-            <div className={styles.statIcon}>🔥</div>
+            <div className={styles.statIconWrapper}>
+              <Image src="/flame.png" alt="Streak" width={32} height={32} />
+            </div>
             <div className={styles.statValue}>{stats.currentStreak}</div>
             <div className={styles.statLabel}>Current Streak</div>
           </div>
         </div>
 
-        {/* Achievements Section */}
-        {stats.achievements.length > 0 && (
+        {/* Badges Section */}
+        {stats.badges.filter(b => b.earned).length > 0 && (
           <div className={styles.section}>
-            <h2 className={styles.sectionTitle}>Achievements</h2>
+            <h2 className={styles.sectionTitle}>Badges Earned</h2>
             <div className={styles.achievementGrid}>
-              {stats.achievements.map((achievement) => (
-                <div key={achievement} className={styles.achievementBadge}>
-                  <div className={styles.badgeIcon}>🏆</div>
-                  <div className={styles.badgeName}>{achievement}</div>
+              {stats.badges.filter(b => b.earned).map((badge) => (
+                <div key={badge.id} className={styles.achievementBadge} title={badge.description}>
+                  <div className={styles.badgeIcon}>{badge.icon}</div>
+                  <div className={styles.badgeName}>{badge.name}</div>
                 </div>
               ))}
             </div>

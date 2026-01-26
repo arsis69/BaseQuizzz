@@ -17,6 +17,8 @@ export default function Home() {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [score, setScore] = useState(0);
   const [showExplanation, setShowExplanation] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   // Initialize the miniapp and load user data
@@ -29,28 +31,38 @@ export default function Home() {
   useEffect(() => {
     // Load user data when context is available (or use default for testing)
     async function loadUserData() {
-      let fid = 999999; // Default for local testing
-      let username = 'TestUser';
+      try {
+        setLoading(true);
+        setError(null);
 
-      if (context?.user) {
-        fid = context.user.fid;
-        username = context.user.displayName || context.user.username || 'User';
+        let fid = 999999; // Default for local testing
+        let username = 'TestUser';
+
+        if (context?.user) {
+          fid = context.user.fid;
+          username = context.user.displayName || context.user.username || 'User';
+        }
+
+        const data = await getUserData(fid, username);
+
+        // Update username if it changed (fixes TestUser issue)
+        if (data.username !== username) {
+          data.username = username;
+          // Import saveUserData dynamically to avoid circular dependency
+          const { saveUserData } = await import('./userData');
+          await saveUserData(data);
+        }
+
+        setUserData(data);
+
+        // Load daily questions
+        setQuestions(getDailyQuestions());
+      } catch (err) {
+        console.error('Error loading user data:', err);
+        setError('Failed to load your data. Please try again.');
+      } finally {
+        setLoading(false);
       }
-
-      const data = await getUserData(fid, username);
-
-      // Update username if it changed (fixes TestUser issue)
-      if (data.username !== username) {
-        data.username = username;
-        // Import saveUserData dynamically to avoid circular dependency
-        const { saveUserData } = await import('./userData');
-        await saveUserData(data);
-      }
-
-      setUserData(data);
-
-      // Load daily questions
-      setQuestions(getDailyQuestions());
     }
 
     loadUserData();
@@ -84,16 +96,54 @@ export default function Home() {
       setShowExplanation(false);
     } else {
       // Quiz complete - record attempt and navigate to success
-      if (userData) {
-        const updatedData = await recordQuizAttempt(userData, score, questions.length);
-        setUserData(updatedData);
+      try {
+        if (userData) {
+          const updatedData = await recordQuizAttempt(userData, score, questions.length);
+          setUserData(updatedData);
+        }
+        router.push(`/success?score=${score}&total=${questions.length}`);
+      } catch (err) {
+        console.error('Error saving quiz results:', err);
+        // Still navigate to success page even if save fails
+        router.push(`/success?score=${score}&total=${questions.length}`);
       }
-      router.push(`/success?score=${score}&total=${questions.length}`);
     }
   };
 
+  // Error state
+  if (error) {
+    return (
+      <div className={styles.container}>
+        <div className={styles.content}>
+          <div className={styles.waitlistForm}>
+            <h1 className={styles.title}>Oops!</h1>
+            <p className={styles.subtitle} style={{ color: '#dc3545', marginBottom: '20px' }}>
+              {error}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                padding: '16px 32px',
+                backgroundColor: '#FF6B35',
+                border: 'none',
+                borderRadius: '12px',
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(255,107,53,0.3)',
+              }}
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Loading state
-  if (!userData || questions.length === 0) {
+  if (loading || !userData || questions.length === 0) {
     return (
       <div className={styles.container}>
         <div className={styles.content}>

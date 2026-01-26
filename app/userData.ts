@@ -245,3 +245,27 @@ export function getAccuracy(userData: UserStats): number {
   if (userData.totalAnswers === 0) return 0;
   return Math.round((userData.correctAnswers / userData.totalAnswers) * 100);
 }
+
+// Dev-only function to reset user data
+export async function resetUserData(fid: number): Promise<void> {
+  try {
+    console.log('Attempting to delete user with FID:', fid);
+
+    const { data, error } = await supabase
+      .from('user_stats')
+      .delete()
+      .eq('fid', fid)
+      .select();
+
+    if (error) {
+      console.error('Supabase delete error:', error);
+      throw error;
+    }
+
+    console.log('Delete successful. Deleted rows:', data?.length || 0);
+    console.log('User data reset successfully for FID:', fid);
+  } catch (error) {
+    console.error('Error resetting user data:', error);
+    throw error; // Re-throw so the UI can handle it
+  }
+}

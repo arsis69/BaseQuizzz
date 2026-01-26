@@ -19,22 +19,22 @@ export const minikitConfig = {
     subtitle: "Test Your Blockchain Knowledge",
     description: "A fun 5-question quiz to test your crypto and blockchain basics",
     screenshotUrls: [
-      `${ROOT_URL}/screenshot-1.png`,
-      `${ROOT_URL}/screenshot-2.png`,
-      `${ROOT_URL}/screenshot-3.png`
+      `${ROOT_URL}/1.png`,
+      `${ROOT_URL}/2.png`,
+      `${ROOT_URL}/3.png`
     ],
-    iconUrl: `${ROOT_URL}/icon.png`,
-    splashImageUrl: `${ROOT_URL}/cover-photo.png`,
+    iconUrl: `${ROOT_URL}/icon1.png`,
+    splashImageUrl: `${ROOT_URL}/cover.png`,
     splashBackgroundColor: "#ffffff",
     homeUrl: ROOT_URL,
     webhookUrl: `${ROOT_URL}/api/webhook`,
     primaryCategory: "social",
     tags: ["quiz", "crypto", "blockchain", "education", "game"],
-    heroImageUrl: `${ROOT_URL}/cover-photo.png`,
+    heroImageUrl: `${ROOT_URL}/cover.png`,
     tagline: "Test your crypto knowledge!",
     ogTitle: "Crypto Quiz Challenge",
     ogDescription: "Take this fun 5-question quiz to test your crypto and blockchain knowledge!",
-    ogImageUrl: `${ROOT_URL}/cover-photo.png`,
+    ogImageUrl: `${ROOT_URL}/cover.png`,
   },
 } as const;
 

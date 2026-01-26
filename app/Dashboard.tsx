@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { UserStats, getAccuracy, hasPlayedToday } from './userData';
+import { UserStats, hasPlayedToday, resetUserData } from './userData';
 import BottomNav from './components/BottomNav';
 import styles from './Dashboard.module.css';
 
@@ -9,7 +9,6 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
-  const accuracy = getAccuracy(userData);
   const playedToday = hasPlayedToday(userData);
 
   return (
@@ -27,7 +26,7 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
         <div className={styles.heroCard}>
           <div className={styles.streakDisplay}>
             <div className={styles.flameIcon}>
-              <Image src="/flame.png" alt="Streak" width={56} height={56} />
+              <Image src="/flame.png" alt="Streak" width={48} height={48} />
             </div>
             <div className={styles.streakInfo}>
               <div className={styles.streakNumber}>{userData.currentStreak}</div>
@@ -36,44 +35,9 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
           </div>
           {playedToday && (
             <div className={styles.completedBadge}>
-              ✓ Today's quiz completed
+              ✓ Today&apos;s quiz completed
             </div>
           )}
-        </div>
-
-        {/* Quick Stats Grid */}
-        <div className={styles.statsGrid}>
-          <div className={styles.statCard}>
-            <div className={styles.statIconWrapper}>
-              <Image src="/trophy.png" alt="Trophy" width={32} height={32} />
-            </div>
-            <div className={styles.statValue}>{userData.totalQuizzes}</div>
-            <div className={styles.statLabel}>Total Quizzes</div>
-          </div>
-
-          <div className={styles.statCard}>
-            <div className={styles.statIconWrapper}>
-              <Image src="/diamond.png" alt="Accuracy" width={32} height={32} />
-            </div>
-            <div className={styles.statValue}>{accuracy}%</div>
-            <div className={styles.statLabel}>Accuracy</div>
-          </div>
-
-          <div className={styles.statCard}>
-            <div className={styles.statIconWrapper}>
-              <Image src="/bolt.png" alt="Correct" width={32} height={32} />
-            </div>
-            <div className={styles.statValue}>{userData.correctAnswers}</div>
-            <div className={styles.statLabel}>Correct</div>
-          </div>
-
-          <div className={styles.statCard}>
-            <div className={styles.statIconWrapper}>
-              <Image src="/flame.png" alt="Best Streak" width={32} height={32} />
-            </div>
-            <div className={styles.statValue}>{userData.longestStreak}</div>
-            <div className={styles.statLabel}>Best Streak</div>
-          </div>
         </div>
 
         {/* CTA Button */}
@@ -90,7 +54,7 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
           ) : (
             <>
               <span className={styles.buttonIcon}>🚀</span>
-              <span>Start Today's Quiz</span>
+              <span>Start Today&apos;s Quiz</span>
             </>
           )}
         </button>
@@ -99,6 +63,34 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
           <p className={styles.nextQuizHint}>
             New questions available in 24 hours
           </p>
+        )}
+
+        {/* Dev Reset Button - Only shows on localhost */}
+        {typeof window !== 'undefined' && window.location.hostname === 'localhost' && (
+          <button
+            onClick={async () => {
+              if (confirm('⚠️ This will delete all your quiz data. Continue?')) {
+                try {
+                  console.log('Resetting data for FID:', userData.fid);
+                  await resetUserData(userData.fid);
+
+                  // Clear all browser storage
+                  localStorage.clear();
+                  sessionStorage.clear();
+
+                  // Hard reload with cache clear
+                  window.location.href = window.location.href + '?reset=' + Date.now();
+                } catch (error) {
+                  console.error('Reset failed:', error);
+                  alert('Reset failed. Check console for details.');
+                }
+              }
+            }}
+            className={styles.devResetButton}
+            title="Development only: Delete user from database and reload"
+          >
+            🔧 DEV: Reset Quiz Data
+          </button>
         )}
       </div>
 
