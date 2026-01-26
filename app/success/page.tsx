@@ -15,6 +15,8 @@ function SuccessContent() {
   const total = parseInt(searchParams.get('total') || '5');
   const percentage = Math.round((score / total) * 100);
   const [timeToNext, setTimeToNext] = useState('');
+  const [txStatus, setTxStatus] = useState<string>('');
+  const [txError, setTxError] = useState<string>('');
 
   const { composeCastAsync } = useComposeCast();
 
@@ -149,9 +151,20 @@ function SuccessContent() {
             <Transaction
               chainId={8453}
               calls={calls}
-              onError={(error) => console.error('Transaction error:', error)}
-              onSuccess={(response) => console.log('Transaction success:', response)}
-              onStatus={(status) => console.log('Transaction status:', status)}
+              onError={(error) => {
+                console.error('Transaction error:', error);
+                setTxError(error.message || 'Transaction failed');
+                setTxStatus('error');
+              }}
+              onSuccess={(response) => {
+                console.log('Transaction success:', response);
+                setTxStatus('success');
+                setTxError('');
+              }}
+              onStatus={(status) => {
+                console.log('Transaction status:', status);
+                setTxStatus(status.statusName || 'unknown');
+              }}
             >
               <div style={{
                 padding: '18px 30px',
@@ -167,6 +180,21 @@ function SuccessContent() {
                 <TransactionStatusAction />
               </TransactionStatus>
             </Transaction>
+
+            {/* Debug info - visible on mobile */}
+            {txStatus && (
+              <div style={{
+                marginTop: '10px',
+                padding: '10px',
+                background: txStatus === 'success' ? '#d4edda' : txStatus === 'error' ? '#f8d7da' : '#fff3cd',
+                borderRadius: '8px',
+                fontSize: '12px',
+                wordBreak: 'break-all'
+              }}>
+                <strong>Status:</strong> {txStatus}
+                {txError && <div style={{ color: '#721c24', marginTop: '5px' }}><strong>Error:</strong> {txError}</div>}
+              </div>
+            )}
           </div>
         </div>
       </div>
