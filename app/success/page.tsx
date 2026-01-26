@@ -3,7 +3,8 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useComposeCast } from '@coinbase/onchainkit/minikit';
-import { Transaction, TransactionButton, TransactionStatus, TransactionStatusLabel, TransactionStatusAction } from '@coinbase/onchainkit/transaction';
+import { useAccount, useSendCalls, useCallsStatus } from 'wagmi';
+import { encodeFunctionData } from 'viem';
 import { minikitConfig } from "../../minikit.config";
 import { CHECKIN_CONTRACT_ADDRESS, CHECKIN_CONTRACT_ABI } from "../contracts/checkInContract";
 import BottomNav from "../components/BottomNav";
@@ -17,36 +18,52 @@ function SuccessContent() {
   const [timeToNext, setTimeToNext] = useState('');
   const [txStatus, setTxStatus] = useState<string>('');
   const [txError, setTxError] = useState<string>('');
+  const [callsId, setCallsId] = useState<string | null>(null);
 
   const { composeCastAsync } = useComposeCast();
+  const { address, isConnected } = useAccount();
 
-  // Define the transaction calls for the check-in contract (ContractFunctionParameters format)
-  const calls = [
-    {
-      address: CHECKIN_CONTRACT_ADDRESS,
-      abi: CHECKIN_CONTRACT_ABI,
-      functionName: 'checkIn',
-      args: [],
+  const { sendCalls, isPending: isSending } = useSendCalls({
+    mutation: {
+      onSuccess: (id) => {
+        console.log('sendCalls success, id:', id);
+        setCallsId(id);
+        setTxStatus('pending');
+        setTxError('');
+      },
+      onError: (error) => {
+        console.error('sendCalls error:', error);
+        setTxStatus('error');
+        setTxError(error.message || JSON.stringify(error));
+      },
     },
-  ];
+  });
+
+  // Check transaction status
+  const { data: callsStatus } = useCallsStatus({
+    id: callsId as string,
+    query: {
+      enabled: !!callsId,
+      refetchInterval: (data) => {
+        if (data.state.data?.status === 'CONFIRMED') return false;
+        return 1000;
+      },
+    },
+  });
+
+  useEffect(() => {
+    if (callsStatus?.status === 'CONFIRMED') {
+      setTxStatus('success');
+      setTxError('');
+    }
+  }, [callsStatus]);
 
   // Update countdown timer every second (TEST MODE: 1 minute countdown)
   useEffect(() => {
     const updateTimer = () => {
-      // TEST MODE: Show countdown to next minute
       const now = new Date();
       const secondsRemaining = 60 - now.getSeconds();
-
       setTimeToNext(`00:00:${secondsRemaining.toString().padStart(2, '0')}`);
-
-      // Production code (uncomment for 24h reset):
-      // const tomorrow = new Date(now);
-      // tomorrow.setHours(24, 0, 0, 0);
-      // const diff = tomorrow.getTime() - now.getTime();
-      // const hours = Math.floor(diff / (1000 * 60 * 60));
-      // const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      // const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-      // setTimeToNext(`${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
     };
 
     updateTimer();
@@ -54,7 +71,6 @@ function SuccessContent() {
     return () => clearInterval(interval);
   }, []);
 
-  // Get performance message based on score
   const getPerformanceMessage = () => {
     if (percentage === 100) return { emoji: '🏆', text: 'Perfect Score! You\'re a crypto expert!' };
     if (percentage >= 80) return { emoji: '🌟', text: 'Excellent! You know your blockchain!' };
@@ -68,39 +84,55 @@ function SuccessContent() {
   const handleShare = async () => {
     try {
       const text = `I just scored ${score}/${total} (${percentage}%) on the ${minikitConfig.miniapp.name}! ${performance.emoji} Can you beat my score? `;
-
       const result = await composeCastAsync({
         text: text,
         embeds: [process.env.NEXT_PUBLIC_URL || ""]
       });
-
       if (result?.cast) {
         console.log("Cast created successfully:", result.cast.hash);
-      } else {
-        console.log("User cancelled the cast");
       }
     } catch (error) {
       console.error("Error sharing cast:", error);
     }
   };
 
+  const handleCheckIn = () => {
+    if (!isConnected || !address) {
+      setTxError('Wallet not connected');
+      setTxStatus('error');
+      return;
+    }
+
+    setTxStatus('sending');
+    setTxError('');
+
+    // Encode the checkIn function call
+    const data = encodeFunctionData({
+      abi: CHECKIN_CONTRACT_ABI,
+      functionName: 'checkIn',
+      args: [],
+    });
+
+    sendCalls({
+      calls: [
+        {
+          to: CHECKIN_CONTRACT_ADDRESS,
+          data: data,
+        },
+      ],
+    });
+  };
 
   return (
     <div className={styles.container}>
       <div className={styles.content}>
         <div className={styles.successMessage}>
-          {/* Score Display */}
-          <div style={{
-            fontSize: '72px',
-            marginBottom: '20px',
-            textAlign: 'center'
-          }}>
+          <div style={{ fontSize: '72px', marginBottom: '20px', textAlign: 'center' }}>
             {performance.emoji}
           </div>
 
           <h1 className={styles.title}>Quiz Complete!</h1>
 
-          {/* Score */}
           <div style={{
             fontSize: '48px',
             fontWeight: 'bold',
@@ -116,7 +148,6 @@ function SuccessContent() {
             You scored {percentage}% on the crypto basics quiz!
           </p>
 
-          {/* Next Quiz Timer */}
           <div style={{
             marginTop: '25px',
             marginBottom: '25px',
@@ -144,45 +175,39 @@ function SuccessContent() {
             SHARE YOUR SCORE
           </button>
 
-          <div style={{
-            marginTop: '15px',
-            width: '100%',
-          }}>
-            <Transaction
-              chainId={8453}
-              calls={calls}
-              onError={(error) => {
-                console.error('Transaction error:', error);
-                setTxError(JSON.stringify(error, null, 2) || 'Transaction failed');
-                setTxStatus('error');
-              }}
-              onSuccess={(response) => {
-                console.log('Transaction success:', response);
-                setTxStatus('success');
-                setTxError('');
-              }}
-              onStatus={(status) => {
-                console.log('Transaction status:', status);
-                setTxStatus(status.statusName || 'unknown');
-              }}
-            >
-              <div style={{
+          <div style={{ marginTop: '15px', width: '100%' }}>
+            <button
+              onClick={handleCheckIn}
+              disabled={isSending || txStatus === 'pending' || txStatus === 'success'}
+              style={{
+                width: '100%',
                 padding: '18px 30px',
-                background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                background: txStatus === 'success'
+                  ? 'linear-gradient(135deg, #28a745 0%, #20c997 100%)'
+                  : txStatus === 'error'
+                  ? 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)'
+                  : 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
                 borderRadius: '16px',
                 boxShadow: '0 10px 40px rgba(40,167,69,0.3)',
-                width: '100%',
-              }}>
-                <TransactionButton text="CLAIM YOUR DAILY CHECK-IN" />
-              </div>
-              <TransactionStatus>
-                <TransactionStatusLabel />
-                <TransactionStatusAction />
-              </TransactionStatus>
-            </Transaction>
+                border: 'none',
+                color: 'white',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: isSending || txStatus === 'pending' || txStatus === 'success' ? 'not-allowed' : 'pointer',
+                opacity: isSending || txStatus === 'pending' ? 0.7 : 1,
+              }}
+            >
+              {isSending || txStatus === 'sending'
+                ? 'PREPARING...'
+                : txStatus === 'pending'
+                ? 'CONFIRMING...'
+                : txStatus === 'success'
+                ? 'CHECK-IN COMPLETE!'
+                : 'CLAIM YOUR DAILY CHECK-IN'}
+            </button>
 
-            {/* Debug info - visible on mobile */}
-            {txStatus && (
+            {/* Status display */}
+            {(txStatus || txError) && (
               <div style={{
                 marginTop: '10px',
                 padding: '10px',
@@ -193,6 +218,7 @@ function SuccessContent() {
               }}>
                 <strong>Status:</strong> {txStatus}
                 {txError && <div style={{ color: '#721c24', marginTop: '5px' }}><strong>Error:</strong> {txError}</div>}
+                {isConnected && <div style={{ marginTop: '5px' }}><strong>Wallet:</strong> {address?.slice(0, 6)}...{address?.slice(-4)}</div>}
               </div>
             )}
           </div>
