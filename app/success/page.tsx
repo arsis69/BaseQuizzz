@@ -153,7 +153,7 @@ function SuccessContent() {
               calls={calls}
               onError={(error) => {
                 console.error('Transaction error:', error);
-                setTxError(error.message || 'Transaction failed');
+                setTxError(JSON.stringify(error, null, 2) || 'Transaction failed');
                 setTxStatus('error');
               }}
               onSuccess={(response) => {
