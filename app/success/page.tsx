@@ -21,7 +21,7 @@ function SuccessContent() {
   // Define the transaction calls for the check-in contract
   const calls = [
     {
-      to: CHECKIN_CONTRACT_ADDRESS,
+      address: CHECKIN_CONTRACT_ADDRESS,
       abi: CHECKIN_CONTRACT_ABI,
       functionName: 'checkIn',
       args: [],
@@ -145,6 +145,7 @@ function SuccessContent() {
             <Transaction
               chainId={8453}
               calls={calls}
+              isSponsored={true}
             >
               <div style={{
                 padding: '18px 30px',

@@ -182,9 +182,9 @@ export const CHECKIN_CONTRACT_ABI = [
   }
 ] as const;
 
-// Contract address - UPDATE THIS AFTER DEPLOYMENT
+// Contract address - Deployed on Base mainnet
 export const CHECKIN_CONTRACT_ADDRESS = (process.env.NEXT_PUBLIC_CHECKIN_CONTRACT_ADDRESS ||
-  "0x0000000000000000000000000000000000000000") as `0x${string}`;
+  "0xc3E74aa77eEE401c5Ce8D385aAD7a4e7B7A24906") as `0x${string}`;
 
 // Base Paymaster address for sponsored transactions
 // This is Base's official paymaster for gasless transactions
