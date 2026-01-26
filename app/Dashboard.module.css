@@ -1,0 +1,365 @@
+.container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #ffffff 0%, #fff8f3 40%, #ffe8dd 100%);
+  padding-bottom: 100px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+.container::before {
+  content: '';
+  position: absolute;
+  top: -40%;
+  right: -20%;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(255, 107, 53, 0.08) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: float 25s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(20px, 20px) scale(1.1);
+  }
+}
+
+.content {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  position: relative;
+  z-index: 1;
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.header {
+  margin-bottom: 1.75rem;
+  animation: slideDown 0.6s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.greeting {
+  padding: 0.5rem;
+}
+
+.welcomeText {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #888;
+  margin-bottom: 0.25rem;
+  font-family: var(--font-inter), sans-serif;
+}
+
+.username {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #FF6B35 0%, #FF8555 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-family: var(--font-poppins), sans-serif;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+/* Hero Streak Card */
+.heroCard {
+  background: linear-gradient(135deg, #FF6B35 0%, #FF8555 100%);
+  border-radius: 28px;
+  padding: 2rem 1.75rem;
+  margin-bottom: 1.75rem;
+  box-shadow: 0 20px 60px rgba(255, 107, 53, 0.3);
+  position: relative;
+  overflow: hidden;
+  animation: scaleIn 0.5s ease-out 0.1s both;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.heroCard::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -20%;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.streakDisplay {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.flameIcon {
+  width: 80px;
+  height: 80px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.streakInfo {
+  flex: 1;
+}
+
+.streakNumber {
+  font-size: 3.5rem;
+  font-weight: 800;
+  color: white;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+  font-family: var(--font-poppins), sans-serif;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.streakLabel {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.completedBadge {
+  margin-top: 1.25rem;
+  padding: 0.875rem;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  color: white;
+  font-weight: 600;
+  text-align: center;
+  font-size: 0.95rem;
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Stats Grid */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 2rem;
+  animation: scaleIn 0.5s ease-out 0.2s both;
+}
+
+.statCard {
+  background: white;
+  border-radius: 20px;
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(255, 107, 53, 0.08);
+  border: 1px solid rgba(255, 107, 53, 0.1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.statCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #FF6B35, #FF8555);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.statCard:active {
+  transform: scale(0.98);
+}
+
+.statCard:active::before {
+  transform: scaleX(1);
+}
+
+.statIconWrapper {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.1) 0%, rgba(255, 133, 85, 0.1) 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(255, 107, 53, 0.12);
+}
+
+.statValue {
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #FF6B35 0%, #FF8555 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-poppins), sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.statLabel {
+  font-size: 0.8rem;
+  color: #888;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* CTA Button */
+.ctaButton {
+  width: 100%;
+  padding: 1.25rem 2rem;
+  background: linear-gradient(135deg, #FF6B35 0%, #FF8555 100%);
+  border: none;
+  border-radius: 18px;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 15px 50px rgba(255, 107, 53, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  font-family: var(--font-poppins), sans-serif;
+  animation: scaleIn 0.5s ease-out 0.3s both;
+}
+
+.ctaButton:active:not(.disabled) {
+  transform: scale(0.97);
+  box-shadow: 0 8px 30px rgba(255, 107, 53, 0.4);
+}
+
+.ctaButton.disabled {
+  background: linear-gradient(135deg, #ccc 0%, #aaa 100%);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.buttonIcon {
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+}
+
+.nextQuizHint {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  color: #888;
+  font-weight: 500;
+  animation: fadeIn 0.5s ease-out 0.4s both;
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 1.25rem 1rem;
+  }
+
+  .username {
+    font-size: 1.75rem;
+  }
+
+  .heroCard {
+    padding: 1.75rem 1.5rem;
+  }
+
+  .streakNumber {
+    font-size: 3rem;
+  }
+
+  .statsGrid {
+    gap: 0.875rem;
+  }
+
+  .statCard {
+    padding: 1.25rem 1rem;
+  }
+
+  .statIconWrapper {
+    width: 48px;
+    height: 48px;
+  }
+
+  .statValue {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .welcomeText {
+    font-size: 1rem;
+  }
+
+  .username {
+    font-size: 1.5rem;
+  }
+
+  .streakDisplay {
+    gap: 1.25rem;
+  }
+
+  .flameIcon {
+    width: 70px;
+    height: 70px;
+  }
+
+  .streakNumber {
+    font-size: 2.5rem;
+  }
+
+  .ctaButton {
+    font-size: 1rem;
+    padding: 1.125rem 1.75rem;
+  }
+}
