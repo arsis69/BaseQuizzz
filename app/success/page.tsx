@@ -5,7 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import { useComposeCast } from '@coinbase/onchainkit/minikit';
 import { useSendCalls } from 'wagmi';
 import { Attribution } from 'ox/erc8021';
+import { encodeFunctionData } from 'viem';
 import { minikitConfig } from "../../minikit.config";
+import { CHECKIN_CONTRACT_ABI, CHECKIN_CONTRACT_ADDRESS, BASE_PAYMASTER_ADDRESS } from "../contracts/checkInContract";
 import styles from "./page.module.css";
 
 // Builder Code attribution suffix
@@ -79,17 +81,28 @@ function SuccessContent() {
     try {
       setTransactionPending(true);
 
-      // Send a simple transaction with builder code attribution
-      // This is a minimal value transaction to record the achievement onchain
+      // Encode the checkIn function call
+      const checkInData = encodeFunctionData({
+        abi: CHECKIN_CONTRACT_ABI,
+        functionName: 'checkIn',
+        args: [],
+      });
+
+      // Send sponsored transaction with builder code attribution
       await sendCalls({
         calls: [
           {
-            to: "0x0000000000000000000000000000000000000000", // Null address for achievement record
-            value: BigInt(0), // No value, just attribution
-            data: "0x" as `0x${string}`, // Empty data
+            to: CHECKIN_CONTRACT_ADDRESS,
+            value: BigInt(0),
+            data: checkInData,
           },
         ],
         capabilities: {
+          // Sponsored transaction (gasless for user)
+          paymasterService: {
+            url: `https://api.developer.coinbase.com/rpc/v1/base/${process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY || ''}`,
+          },
+          // Builder code attribution
           dataSuffix: {
             value: DATA_SUFFIX,
             optional: true,
@@ -195,7 +208,7 @@ function SuccessContent() {
                 }
               }}
             >
-              {transactionPending ? 'CLAIMING...' : '🏆 CLAIM ACHIEVEMENT ONCHAIN'}
+              {transactionPending ? 'CHECKING IN...' : '🔥 DAILY CHECK-IN (FREE)'}
             </button>
           )}
 
@@ -210,7 +223,7 @@ function SuccessContent() {
               color: '#155724',
               fontWeight: 'bold'
             }}>
-              ✅ Achievement Claimed Onchain!
+              ✅ Daily Check-In Complete! Streak Recorded Onchain!
             </div>
           )}
 
