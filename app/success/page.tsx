@@ -3,9 +3,10 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useComposeCast } from '@coinbase/onchainkit/minikit';
-import { useSendCalls } from 'wagmi';
+import { useSendCalls, useAccount, useCapabilities } from 'wagmi';
 import { Attribution } from 'ox/erc8021';
 import { encodeFunctionData } from 'viem';
+import { base } from 'wagmi/chains';
 import { minikitConfig } from "../../minikit.config";
 import { CHECKIN_CONTRACT_ABI, CHECKIN_CONTRACT_ADDRESS } from "../contracts/checkInContract";
 import BottomNav from "../components/BottomNav";
@@ -25,6 +26,8 @@ function SuccessContent() {
 
   const { composeCastAsync } = useComposeCast();
   const { sendCalls } = useSendCalls();
+  const { address } = useAccount();
+  const { data: capabilities } = useCapabilities({ account: address });
   const [transactionSent, setTransactionSent] = useState(false);
   const [transactionPending, setTransactionPending] = useState(false);
   const [transactionError, setTransactionError] = useState<string | null>(null);
@@ -91,7 +94,26 @@ function SuccessContent() {
         args: [],
       });
 
-      // Send sponsored transaction with builder code attribution
+      // Check if paymaster is supported
+      const baseCapabilities = capabilities?.[base.id];
+      const supportsPaymaster = baseCapabilities?.paymasterService?.supported;
+
+      // Build capabilities object
+      const txCapabilities: any = {
+        dataSuffix: {
+          value: DATA_SUFFIX,
+          optional: true,
+        },
+      };
+
+      // Only add paymaster if supported
+      if (supportsPaymaster && process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY) {
+        txCapabilities.paymasterService = {
+          url: `https://api.developer.coinbase.com/rpc/v1/base/${process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}`,
+        };
+      }
+
+      // Send transaction with capabilities
       await sendCalls({
         calls: [
           {
@@ -100,17 +122,7 @@ function SuccessContent() {
             data: checkInData,
           },
         ],
-        capabilities: {
-          // Sponsored transaction (gasless for user)
-          paymasterService: {
-            url: `https://api.developer.coinbase.com/rpc/v1/base/${process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY || ''}`,
-          },
-          // Builder code attribution
-          dataSuffix: {
-            value: DATA_SUFFIX,
-            optional: true,
-          },
-        },
+        capabilities: txCapabilities,
       });
 
       setTransactionSent(true);
