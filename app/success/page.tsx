@@ -45,16 +45,19 @@ function SuccessContent() {
     query: {
       enabled: !!callsId,
       refetchInterval: (data) => {
-        if (data.state.data?.status === 'CONFIRMED') return false;
+        if (data.state.data?.status === 'success') return false;
         return 1000;
       },
     },
   });
 
   useEffect(() => {
-    if (callsStatus?.status === 'CONFIRMED') {
+    if (callsStatus?.status === 'success') {
       setTxStatus('success');
       setTxError('');
+    } else if (callsStatus?.status === 'failure') {
+      setTxStatus('error');
+      setTxError('Transaction failed on-chain');
     }
   }, [callsStatus]);
 
