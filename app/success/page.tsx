@@ -8,6 +8,7 @@ import { Attribution } from 'ox/erc8021';
 import { encodeFunctionData } from 'viem';
 import { minikitConfig } from "../../minikit.config";
 import { CHECKIN_CONTRACT_ABI, CHECKIN_CONTRACT_ADDRESS } from "../contracts/checkInContract";
+import BottomNav from "../components/BottomNav";
 import styles from "./page.module.css";
 
 // Builder Code attribution suffix
@@ -223,6 +224,7 @@ function SuccessContent() {
           )}
         </div>
       </div>
+      <BottomNav />
     </div>
   );
 }
@@ -236,6 +238,7 @@ export default function Success() {
             <h1 className={styles.title}>Loading...</h1>
           </div>
         </div>
+        <BottomNav />
       </div>
     }>
       <SuccessContent />
