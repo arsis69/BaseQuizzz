@@ -153,11 +153,11 @@ function SuccessContent() {
           <div style={{
             marginTop: '25px',
             marginBottom: '25px',
-            padding: '20px',
-            backgroundColor: '#fff8f0',
-            borderRadius: '12px',
+            padding: '24px',
+            background: 'linear-gradient(135deg, #fff8f0 0%, #ffe8dd 100%)',
+            borderRadius: '20px',
             border: '2px solid #FF6B35',
-            boxShadow: '0 4px 12px rgba(255,107,53,0.2)'
+            boxShadow: '0 10px 30px rgba(255,107,53,0.15)'
           }}>
             <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#666', fontWeight: '600' }}>
               NEXT QUIZ IN
@@ -183,29 +183,20 @@ function SuccessContent() {
               disabled={transactionPending}
               style={{
                 marginTop: '15px',
-                padding: '16px 30px',
-                backgroundColor: transactionPending ? '#ccc' : '#28a745',
+                padding: '18px 30px',
+                background: transactionPending ? 'linear-gradient(135deg, #ccc 0%, #aaa 100%)' : 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
                 border: 'none',
-                borderRadius: '12px',
+                borderRadius: '16px',
                 color: 'white',
                 fontSize: '16px',
-                fontWeight: 'bold',
+                fontWeight: '700',
                 cursor: transactionPending ? 'not-allowed' : 'pointer',
                 width: '100%',
-                transition: 'all 0.3s ease',
-                boxShadow: '0 4px 12px rgba(40,167,69,0.3)',
-              }}
-              onMouseEnter={(e) => {
-                if (!transactionPending) {
-                  e.currentTarget.style.backgroundColor = '#218838';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!transactionPending) {
-                  e.currentTarget.style.backgroundColor = '#28a745';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: transactionPending ? 'none' : '0 10px 40px rgba(40,167,69,0.3)',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                fontFamily: 'var(--font-poppins), sans-serif',
               }}
             >
               {transactionPending ? 'CHECKING IN...' : 'CLAIM YOUR DAILY CHECK-IN'}
@@ -215,13 +206,17 @@ function SuccessContent() {
           {transactionSent && (
             <div style={{
               marginTop: '15px',
-              padding: '16px',
-              backgroundColor: '#d4edda',
-              borderRadius: '12px',
+              padding: '20px',
+              background: 'linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%)',
+              borderRadius: '16px',
               border: '2px solid #28a745',
               textAlign: 'center',
               color: '#155724',
-              fontWeight: 'bold'
+              fontWeight: '700',
+              boxShadow: '0 10px 30px rgba(40,167,69,0.15)',
+              fontSize: '16px',
+              fontFamily: 'var(--font-poppins), sans-serif',
+              animation: 'scaleIn 0.4s ease-out'
             }}>
               ✅ Daily Check-In Complete! Streak Recorded Onchain!
             </div>

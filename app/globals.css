@@ -2,6 +2,12 @@
   :root {
     --background: #ffffff;
     --foreground: #171717;
+    --orange: #FF6B35;
+    --orange-light: #FF8555;
+    --orange-dark: #E55A2B;
+    --green: #28a745;
+    --peach-light: #fff5f0;
+    --peach-medium: #ffe8dd;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -15,6 +21,7 @@
   body {
     max-width: 100vw;
     overflow-x: hidden;
+    scroll-behavior: smooth;
   }
 
   body {
@@ -23,6 +30,12 @@
     font-family: var(--font-inter), sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-poppins), sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 
   code {
@@ -52,9 +65,63 @@
     text-decoration: none;
   }
 
+  button {
+    font-family: var(--font-poppins), sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  button:active {
+    transform: scale(0.98);
+  }
+
   @media (prefers-color-scheme: dark) {
     html {
       color-scheme: dark;
+    }
+  }
+
+  /* Smooth animations */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
     }
   }
 }
