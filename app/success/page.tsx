@@ -3,8 +3,7 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useComposeCast } from '@coinbase/onchainkit/minikit';
-import { useAccount, useSendCalls, useCallsStatus } from 'wagmi';
-import { encodeFunctionData } from 'viem';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
 import { minikitConfig } from "../../minikit.config";
 import { CHECKIN_CONTRACT_ADDRESS, CHECKIN_CONTRACT_ABI } from "../contracts/checkInContract";
 import BottomNav from "../components/BottomNav";
@@ -16,50 +15,25 @@ function SuccessContent() {
   const total = parseInt(searchParams.get('total') || '5');
   const percentage = Math.round((score / total) * 100);
   const [timeToNext, setTimeToNext] = useState('');
-  const [txStatus, setTxStatus] = useState<string>('');
-  const [txError, setTxError] = useState<string>('');
-  const [callsId, setCallsId] = useState<string | null>(null);
 
   const { composeCastAsync } = useComposeCast();
   const { address, isConnected } = useAccount();
 
-  const { sendCalls, isPending: isSending } = useSendCalls({
-    mutation: {
-      onSuccess: (result) => {
-        console.log('sendCalls success, result:', result);
-        setCallsId(result.id);
-        setTxStatus('pending');
-        setTxError('');
-      },
-      onError: (error) => {
-        console.error('sendCalls error:', error);
-        setTxStatus('error');
-        setTxError(error.message || JSON.stringify(error));
-      },
-    },
-  });
+  const {
+    writeContract,
+    data: txHash,
+    isPending: isWriting,
+    error: writeError,
+    reset: resetWrite
+  } = useWriteContract();
 
-  // Check transaction status
-  const { data: callsStatus } = useCallsStatus({
-    id: callsId as string,
-    query: {
-      enabled: !!callsId,
-      refetchInterval: (data) => {
-        if (data.state.data?.status === 'success') return false;
-        return 1000;
-      },
-    },
+  const {
+    isLoading: isConfirming,
+    isSuccess: isConfirmed,
+    error: confirmError
+  } = useWaitForTransactionReceipt({
+    hash: txHash,
   });
-
-  useEffect(() => {
-    if (callsStatus?.status === 'success') {
-      setTxStatus('success');
-      setTxError('');
-    } else if (callsStatus?.status === 'failure') {
-      setTxStatus('error');
-      setTxError('Transaction failed on-chain');
-    }
-  }, [callsStatus]);
 
   // Update countdown timer every second (TEST MODE: 1 minute countdown)
   useEffect(() => {
@@ -101,30 +75,42 @@ function SuccessContent() {
 
   const handleCheckIn = () => {
     if (!isConnected || !address) {
-      setTxError('Wallet not connected');
-      setTxStatus('error');
       return;
     }
 
-    setTxStatus('sending');
-    setTxError('');
+    resetWrite();
 
-    // Encode the checkIn function call
-    const data = encodeFunctionData({
+    writeContract({
+      address: CHECKIN_CONTRACT_ADDRESS,
       abi: CHECKIN_CONTRACT_ABI,
       functionName: 'checkIn',
-      args: [],
-    });
-
-    sendCalls({
-      calls: [
-        {
-          to: CHECKIN_CONTRACT_ADDRESS,
-          data: data,
-        },
-      ],
     });
   };
+
+  const getButtonText = () => {
+    if (isWriting) return 'WAITING FOR APPROVAL...';
+    if (isConfirming) return 'CONFIRMING...';
+    if (isConfirmed) return 'CHECK-IN COMPLETE!';
+    return 'CLAIM YOUR DAILY CHECK-IN';
+  };
+
+  const getStatusInfo = () => {
+    if (writeError) {
+      return { type: 'error', message: writeError.message };
+    }
+    if (confirmError) {
+      return { type: 'error', message: confirmError.message };
+    }
+    if (isConfirmed) {
+      return { type: 'success', message: `Transaction confirmed! Hash: ${txHash}` };
+    }
+    if (txHash) {
+      return { type: 'pending', message: `Transaction sent: ${txHash}` };
+    }
+    return null;
+  };
+
+  const statusInfo = getStatusInfo();
 
   return (
     <div className={styles.container}>
@@ -181,13 +167,13 @@ function SuccessContent() {
           <div style={{ marginTop: '15px', width: '100%' }}>
             <button
               onClick={handleCheckIn}
-              disabled={isSending || txStatus === 'pending' || txStatus === 'success'}
+              disabled={isWriting || isConfirming || isConfirmed || !isConnected}
               style={{
                 width: '100%',
                 padding: '18px 30px',
-                background: txStatus === 'success'
+                background: isConfirmed
                   ? 'linear-gradient(135deg, #28a745 0%, #20c997 100%)'
-                  : txStatus === 'error'
+                  : writeError || confirmError
                   ? 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)'
                   : 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
                 borderRadius: '16px',
@@ -196,32 +182,30 @@ function SuccessContent() {
                 color: 'white',
                 fontSize: '16px',
                 fontWeight: 'bold',
-                cursor: isSending || txStatus === 'pending' || txStatus === 'success' ? 'not-allowed' : 'pointer',
-                opacity: isSending || txStatus === 'pending' ? 0.7 : 1,
+                cursor: isWriting || isConfirming || isConfirmed ? 'not-allowed' : 'pointer',
+                opacity: isWriting || isConfirming ? 0.7 : 1,
               }}
             >
-              {isSending || txStatus === 'sending'
-                ? 'PREPARING...'
-                : txStatus === 'pending'
-                ? 'CONFIRMING...'
-                : txStatus === 'success'
-                ? 'CHECK-IN COMPLETE!'
-                : 'CLAIM YOUR DAILY CHECK-IN'}
+              {getButtonText()}
             </button>
 
             {/* Status display */}
-            {(txStatus || txError) && (
+            {(statusInfo || !isConnected) && (
               <div style={{
                 marginTop: '10px',
                 padding: '10px',
-                background: txStatus === 'success' ? '#d4edda' : txStatus === 'error' ? '#f8d7da' : '#fff3cd',
+                background: statusInfo?.type === 'success' ? '#d4edda' : statusInfo?.type === 'error' ? '#f8d7da' : '#fff3cd',
                 borderRadius: '8px',
                 fontSize: '12px',
                 wordBreak: 'break-all'
               }}>
-                <strong>Status:</strong> {txStatus}
-                {txError && <div style={{ color: '#721c24', marginTop: '5px' }}><strong>Error:</strong> {txError}</div>}
-                {isConnected && <div style={{ marginTop: '5px' }}><strong>Wallet:</strong> {address?.slice(0, 6)}...{address?.slice(-4)}</div>}
+                {!isConnected && <div><strong>Wallet not connected</strong></div>}
+                {isConnected && <div><strong>Wallet:</strong> {address?.slice(0, 6)}...{address?.slice(-4)}</div>}
+                {statusInfo && (
+                  <div style={{ marginTop: '5px', color: statusInfo.type === 'error' ? '#721c24' : 'inherit' }}>
+                    <strong>{statusInfo.type === 'error' ? 'Error' : 'Status'}:</strong> {statusInfo.message}
+                  </div>
+                )}
               </div>
             )}
           </div>
