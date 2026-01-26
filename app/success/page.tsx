@@ -208,7 +208,7 @@ function SuccessContent() {
                 }
               }}
             >
-              {transactionPending ? 'CHECKING IN...' : '🔥 DAILY CHECK-IN (FREE)'}
+              {transactionPending ? 'CHECKING IN...' : 'CLAIM YOUR DAILY CHECK-IN'}
             </button>
           )}
 
@@ -226,33 +226,6 @@ function SuccessContent() {
               ✅ Daily Check-In Complete! Streak Recorded Onchain!
             </div>
           )}
-
-          <button
-            onClick={() => window.location.href = '/'}
-            style={{
-              marginTop: '15px',
-              padding: '12px 30px',
-              backgroundColor: 'transparent',
-              border: '2px solid #FF6B35',
-              borderRadius: '12px',
-              color: '#FF6B35',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              width: '100%',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#FF6B35';
-              e.currentTarget.style.color = 'white';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = '#FF6B35';
-            }}
-          >
-            TRY AGAIN
-          </button>
         </div>
       </div>
     </div>
