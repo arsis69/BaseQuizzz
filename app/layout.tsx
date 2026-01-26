@@ -11,14 +11,15 @@ export async function generateMetadata(): Promise<Metadata> {
     description: minikitConfig.miniapp.description,
     other: {
       "base:app_id": "69768b973a92926b661fd57e",
-      "fc:frame": JSON.stringify({
+      "fc:miniapp": JSON.stringify({
         version: minikitConfig.miniapp.version,
         imageUrl: minikitConfig.miniapp.heroImageUrl,
         button: {
-          title: `Join the ${minikitConfig.miniapp.name} Waitlist`,
+          title: "Start Quiz",
           action: {
             name: `Launch ${minikitConfig.miniapp.name}`,
             type: "launch_frame",
+            url: minikitConfig.miniapp.homeUrl,
           },
         },
       }),
