@@ -18,7 +18,7 @@ function SuccessContent() {
 
   const { composeCastAsync } = useComposeCast();
 
-  // Define the transaction calls for the check-in contract
+  // Define the transaction calls for the check-in contract (ContractFunctionParameters format)
   const calls = [
     {
       address: CHECKIN_CONTRACT_ADDRESS,
@@ -149,6 +149,9 @@ function SuccessContent() {
             <Transaction
               chainId={8453}
               calls={calls}
+              onError={(error) => console.error('Transaction error:', error)}
+              onSuccess={(response) => console.log('Transaction success:', response)}
+              onStatus={(status) => console.log('Transaction status:', status)}
             >
               <div style={{
                 padding: '18px 30px',
