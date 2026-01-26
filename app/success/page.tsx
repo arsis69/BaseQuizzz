@@ -25,9 +25,9 @@ function SuccessContent() {
 
   const { sendCalls, isPending: isSending } = useSendCalls({
     mutation: {
-      onSuccess: (id) => {
-        console.log('sendCalls success, id:', id);
-        setCallsId(id);
+      onSuccess: (result) => {
+        console.log('sendCalls success, result:', result);
+        setCallsId(result.id);
         setTxStatus('pending');
         setTxError('');
       },
