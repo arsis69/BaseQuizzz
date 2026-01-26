@@ -3,19 +3,11 @@
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useComposeCast } from '@coinbase/onchainkit/minikit';
-import { useSendCalls, useAccount, useCapabilities } from 'wagmi';
-import { Attribution } from 'ox/erc8021';
-import { encodeFunctionData } from 'viem';
-import { base } from 'wagmi/chains';
+import { Transaction, TransactionButton, TransactionStatus, TransactionStatusLabel, TransactionStatusAction } from '@coinbase/onchainkit/transaction';
 import { minikitConfig } from "../../minikit.config";
-import { CHECKIN_CONTRACT_ABI, CHECKIN_CONTRACT_ADDRESS } from "../contracts/checkInContract";
+import { CHECKIN_CONTRACT_ADDRESS, CHECKIN_CONTRACT_ABI } from "../contracts/checkInContract";
 import BottomNav from "../components/BottomNav";
 import styles from "./page.module.css";
-
-// Builder Code attribution suffix
-const DATA_SUFFIX = Attribution.toDataSuffix({
-  codes: ["bc_7tz4s96h"],
-});
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -25,12 +17,16 @@ function SuccessContent() {
   const [timeToNext, setTimeToNext] = useState('');
 
   const { composeCastAsync } = useComposeCast();
-  const { sendCalls } = useSendCalls();
-  const { address } = useAccount();
-  const { data: capabilities } = useCapabilities({ account: address });
-  const [transactionSent, setTransactionSent] = useState(false);
-  const [transactionPending, setTransactionPending] = useState(false);
-  const [transactionError, setTransactionError] = useState<string | null>(null);
+
+  // Define the transaction calls for the check-in contract
+  const calls = [
+    {
+      to: CHECKIN_CONTRACT_ADDRESS,
+      abi: CHECKIN_CONTRACT_ABI,
+      functionName: 'checkIn',
+      args: [],
+    },
+  ];
 
   // Update countdown timer every second
   useEffect(() => {
@@ -82,60 +78,6 @@ function SuccessContent() {
     }
   };
 
-  const handleClaimAchievement = async () => {
-    try {
-      setTransactionPending(true);
-      setTransactionError(null);
-
-      // Encode the checkIn function call
-      const checkInData = encodeFunctionData({
-        abi: CHECKIN_CONTRACT_ABI,
-        functionName: 'checkIn',
-        args: [],
-      });
-
-      // Check if paymaster is supported
-      const baseCapabilities = capabilities?.[base.id];
-      const supportsPaymaster = baseCapabilities?.paymasterService?.supported;
-
-      // Build capabilities object
-      const txCapabilities: {
-        dataSuffix: { value: string; optional: boolean };
-        paymasterService?: { url: string };
-      } = {
-        dataSuffix: {
-          value: DATA_SUFFIX,
-          optional: true,
-        },
-      };
-
-      // Only add paymaster if supported
-      if (supportsPaymaster && process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY) {
-        txCapabilities.paymasterService = {
-          url: `https://api.developer.coinbase.com/rpc/v1/base/${process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}`,
-        };
-      }
-
-      // Send transaction with capabilities
-      await sendCalls({
-        calls: [
-          {
-            to: CHECKIN_CONTRACT_ADDRESS,
-            value: BigInt(0),
-            data: checkInData,
-          },
-        ],
-        capabilities: txCapabilities,
-      });
-
-      setTransactionSent(true);
-      setTransactionPending(false);
-    } catch (error) {
-      console.error("Error claiming achievement:", error);
-      setTransactionPending(false);
-      setTransactionError('Transaction failed. You may have already checked in today, or there was a network error. Your score is still saved!');
-    }
-  };
 
   return (
     <div className={styles.container}>
@@ -196,66 +138,29 @@ function SuccessContent() {
             SHARE YOUR SCORE
           </button>
 
-          {!transactionSent && (
-            <button
-              onClick={handleClaimAchievement}
-              disabled={transactionPending}
-              style={{
-                marginTop: '15px',
-                padding: '18px 30px',
-                background: transactionPending ? 'linear-gradient(135deg, #ccc 0%, #aaa 100%)' : 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
-                border: 'none',
-                borderRadius: '16px',
-                color: 'white',
-                fontSize: '16px',
-                fontWeight: '700',
-                cursor: transactionPending ? 'not-allowed' : 'pointer',
-                width: '100%',
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                boxShadow: transactionPending ? 'none' : '0 10px 40px rgba(40,167,69,0.3)',
-                textTransform: 'uppercase',
-                letterSpacing: '1px',
-                fontFamily: 'var(--font-poppins), sans-serif',
-              }}
+          <div style={{
+            marginTop: '15px',
+            width: '100%',
+          }}>
+            <Transaction
+              chainId={8453}
+              calls={calls}
             >
-              {transactionPending ? 'CHECKING IN...' : 'CLAIM YOUR DAILY CHECK-IN'}
-            </button>
-          )}
-
-          {transactionSent && (
-            <div style={{
-              marginTop: '15px',
-              padding: '20px',
-              background: 'linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%)',
-              borderRadius: '16px',
-              border: '2px solid #28a745',
-              textAlign: 'center',
-              color: '#155724',
-              fontWeight: '700',
-              boxShadow: '0 10px 30px rgba(40,167,69,0.15)',
-              fontSize: '16px',
-              fontFamily: 'var(--font-poppins), sans-serif',
-              animation: 'scaleIn 0.4s ease-out'
-            }}>
-              ✅ Daily Check-In Complete! Streak Recorded Onchain!
-            </div>
-          )}
-
-          {transactionError && (
-            <div style={{
-              marginTop: '15px',
-              padding: '16px',
-              background: '#fff3cd',
-              borderRadius: '12px',
-              border: '2px solid #ffc107',
-              textAlign: 'center',
-              color: '#856404',
-              fontSize: '14px',
-              lineHeight: '1.5'
-            }}>
-              ⚠️ {transactionError}
-            </div>
-          )}
+              <div style={{
+                padding: '18px 30px',
+                background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+                borderRadius: '16px',
+                boxShadow: '0 10px 40px rgba(40,167,69,0.3)',
+                width: '100%',
+              }}>
+                <TransactionButton text="CLAIM YOUR DAILY CHECK-IN" />
+              </div>
+              <TransactionStatus>
+                <TransactionStatusLabel />
+                <TransactionStatusAction />
+              </TransactionStatus>
+            </Transaction>
+          </div>
         </div>
       </div>
       <BottomNav />
