@@ -1,5 +1,6 @@
 {
   "name": "base-quizzz",
+  "main": ".open-next/worker.js",
   "compatibility_date": "2026-01-30",
   "compatibility_flags": ["nodejs_compat"],
 
