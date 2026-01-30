@@ -5,6 +5,10 @@ const nextConfig: NextConfig = {
     config.externals.push("pino-pretty", "lokijs", "encoding");
     return config;
   },
+  // Cloudflare Pages compatibility
+  images: {
+    unoptimized: true,
+  },
 };
 
 export default nextConfig;

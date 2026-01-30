@@ -1,0 +1,16 @@
+name = "base-quizzz"
+compatibility_date = "2024-01-01"
+
+# Cloudflare Pages configuration
+# Note: You'll configure the build command in Cloudflare Pages dashboard:
+# Build command: npm run build
+# Build output directory: .next
+# Node.js version: 18 or later
+
+# Environment variables (configure these in Cloudflare Pages dashboard)
+# - NEXT_PUBLIC_URL
+# - NEXT_PUBLIC_SUPABASE_URL
+# - NEXT_PUBLIC_SUPABASE_ANON_KEY
+# - SUPABASE_SERVICE_ROLE_KEY (if needed)
+# - NEXT_PUBLIC_ONCHAINKIT_API_KEY
+# - NEXT_PUBLIC_PROJECT_NAME
