@@ -1,0 +1,20 @@
+{
+  "name": "base-quizzz",
+  "compatibility_date": "2026-01-30",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Build configuration for Cloudflare dashboard
+  "build": {
+    "command": "npm run build"
+  },
+
+  // Environment variables (configure these in Cloudflare dashboard)
+  "vars": {
+    // Add your environment variables in Cloudflare dashboard:
+    // NEXT_PUBLIC_URL
+    // NEXT_PUBLIC_SUPABASE_URL
+    // NEXT_PUBLIC_SUPABASE_ANON_KEY
+    // NEXT_PUBLIC_ONCHAINKIT_API_KEY
+    // NEXT_PUBLIC_PROJECT_NAME
+  }
+}
