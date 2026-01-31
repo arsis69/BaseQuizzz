@@ -1,9 +1,22 @@
-// DidYouKnow Contract - Crypto Facts Acknowledgment
-// Deploy this contract and update the address below
+// CryptoTips Contract - Allows re-acknowledging same tip multiple times
+// TODO: Deploy the new CryptoTips.sol contract and update this address
 
-export const DID_YOU_KNOW_CONTRACT_ADDRESS = '0x18F30d7643ADc75cc632bE9F6572ED5a9C7621cA';
+export const DID_YOU_KNOW_CONTRACT_ADDRESS = '0x18F30d7643ADc75cc632bE9F6572ED5a9C7621cA'; // OLD CONTRACT - UPDATE THIS!
 
 export const DID_YOU_KNOW_CONTRACT_ABI = [
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tipId",
+        "type": "uint256"
+      }
+    ],
+    "name": "acknowledgeTip",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
   {
     "anonymous": false,
     "inputs": [
@@ -16,7 +29,7 @@ export const DID_YOU_KNOW_CONTRACT_ABI = [
       {
         "indexed": true,
         "internalType": "uint256",
-        "name": "factId",
+        "name": "tipId",
         "type": "uint256"
       },
       {
@@ -28,63 +41,12 @@ export const DID_YOU_KNOW_CONTRACT_ABI = [
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "totalAcknowledgedByUser",
+        "name": "totalAcknowledgmentsByUser",
         "type": "uint256"
       }
     ],
-    "name": "FactAcknowledged",
+    "name": "TipAcknowledged",
     "type": "event"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "factId",
-        "type": "uint256"
-      }
-    ],
-    "name": "acknowledgeFact",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      }
-    ],
-    "name": "getNextUnacknowledgedFact",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      }
-    ],
-    "name": "getUserAcknowledgedFacts",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
   },
   {
     "inputs": [
@@ -106,56 +68,8 @@ export const DID_YOU_KNOW_CONTRACT_ABI = [
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "name": "hasAcknowledged",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "factId",
-        "type": "uint256"
-      }
-    ],
-    "name": "hasUserAcknowledgedFact",
-    "outputs": [
-      {
-        "internalType": "bool",
-        "name": "",
-        "type": "bool"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [],
-    "name": "TOTAL_FACTS",
+    "name": "TOTAL_TIPS",
     "outputs": [
       {
         "internalType": "uint256",
@@ -174,7 +88,7 @@ export const DID_YOU_KNOW_CONTRACT_ABI = [
         "type": "address"
       }
     ],
-    "name": "totalAcknowledged",
+    "name": "totalAcknowledgments",
     "outputs": [
       {
         "internalType": "uint256",

@@ -2,8 +2,7 @@ import Image from 'next/image';
 import { useState, useEffect, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { useSendCalls, useCallsStatus } from 'wagmi/experimental';
-import { encodeFunctionData, createPublicClient, http } from 'viem';
-import { base } from 'viem/chains';
+import { encodeFunctionData } from 'viem';
 import { UserStats, hasPlayedToday, resetUserData } from './userData';
 import { DID_YOU_KNOW_FACTS } from './didYouKnowFacts';
 import { DID_YOU_KNOW_CONTRACT_ADDRESS, DID_YOU_KNOW_CONTRACT_ABI } from './contracts/didYouKnowContract';
@@ -15,55 +14,28 @@ interface DashboardProps {
   onStartQuiz: () => void;
 }
 
-// Create a public client using Base's public RPC (bypasses OnchainKit API)
-const publicClient = createPublicClient({
-  chain: base,
-  transport: http('https://mainnet.base.org'),
-});
-
 export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
   const playedToday = hasPlayedToday(userData);
   const { address, isConnected } = useAccount();
 
-  // Did You Know state
+  // Crypto Tips state
   const [currentFact, setCurrentFact] = useState(DID_YOU_KNOW_FACTS[0]);
   const [callsId, setCallsId] = useState<string>();
-  const [hasAcknowledgedCurrent, setHasAcknowledgedCurrent] = useState<boolean | null>(null);
-  const [fetchFactsError, setFetchFactsError] = useState<string | null>(null);
 
   const isContractDeployed = DID_YOU_KNOW_CONTRACT_ADDRESS.length === 42 && DID_YOU_KNOW_CONTRACT_ADDRESS.startsWith('0x');
 
-  // Load a random fact and check if it's acknowledged
-  const loadRandomFact = useCallback(async () => {
-    if (!address || !isContractDeployed) return;
+  // Load a random tip
+  const loadRandomTip = useCallback(() => {
+    // Pick a random tip
+    const randomTipId = Math.floor(Math.random() * 20);
+    console.log('[TIP] Showing random tip:', randomTipId);
+    setCurrentFact(DID_YOU_KNOW_FACTS[randomTipId]);
+  }, []);
 
-    try {
-      setFetchFactsError(null);
-
-      // Pick a random fact
-      const randomFactId = Math.floor(Math.random() * 20);
-      console.log('[FACT] Showing random fact:', randomFactId);
-      setCurrentFact(DID_YOU_KNOW_FACTS[randomFactId]);
-
-      // Check if this random fact is already acknowledged
-      const hasAcknowledged = await publicClient.readContract({
-        address: DID_YOU_KNOW_CONTRACT_ADDRESS as `0x${string}`,
-        abi: DID_YOU_KNOW_CONTRACT_ABI,
-        functionName: 'hasAcknowledged',
-        args: [address, BigInt(randomFactId)],
-      });
-      setHasAcknowledgedCurrent(hasAcknowledged as boolean);
-      console.log('[FACT] Random fact', randomFactId, 'already acknowledged?:', hasAcknowledged);
-    } catch (error) {
-      console.error('[CONTRACT] Error reading contract:', error);
-      setFetchFactsError(error instanceof Error ? error.message : 'Failed to read contract');
-    }
-  }, [address, isContractDeployed]);
-
-  // Load random fact when address changes or on mount
+  // Load random tip on mount
   useEffect(() => {
-    loadRandomFact();
-  }, [loadRandomFact]);
+    loadRandomTip();
+  }, [loadRandomTip]);
 
   // sendCalls for acknowledging facts
   const {
@@ -120,41 +92,34 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
     }
   }, [isAcknowledging, isConfirming, isConfirmed]);
 
-  // When transaction is confirmed, show another random fact
+  // When transaction is confirmed, show another random tip
   useEffect(() => {
     if (isConfirmed) {
-      console.log('[FACT] Transaction confirmed, showing another random fact...');
+      console.log('[TIP] Transaction confirmed, showing another random tip...');
 
       const reloadAfterTransaction = async () => {
-        // Wait 2 seconds for blockchain to update
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Wait 1 second then show another random tip
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        // Show another random fact
-        await loadRandomFact();
+        // Show another random tip
+        loadRandomTip();
 
         // Clear transaction state
         setTimeout(() => {
-          console.log('[FACT] Clearing transaction state');
+          console.log('[TIP] Clearing transaction state');
           setCallsId(undefined);
-        }, 1000);
+        }, 500);
       };
 
       reloadAfterTransaction();
     }
-  }, [isConfirmed, loadRandomFact]);
+  }, [isConfirmed, loadRandomTip]);
 
-  const handleAcknowledgeFact = async () => {
+  const handleAcknowledgeTip = async () => {
     setDebugMessage('');
 
     if (!isConnected || !address) {
       setDebugMessage('❌ Wallet not connected');
-      return;
-    }
-
-    // If already acknowledged, just show another random fact (no transaction needed)
-    if (hasAcknowledgedCurrent === true) {
-      setDebugMessage('💡 Got it! Loading another tip...');
-      await loadRandomFact();
       return;
     }
 
@@ -163,13 +128,13 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
 
       const data = encodeFunctionData({
         abi: DID_YOU_KNOW_CONTRACT_ABI,
-        functionName: 'acknowledgeFact',
+        functionName: 'acknowledgeTip',
         args: [BigInt(currentFact.id)],
       });
 
-      console.log('[FACT] Calling sendCalls for fact:', currentFact.id);
-      console.log('[FACT] User:', address);
-      console.log('[FACT] Contract:', DID_YOU_KNOW_CONTRACT_ADDRESS);
+      console.log('[TIP] Calling sendCalls for tip:', currentFact.id);
+      console.log('[TIP] User:', address);
+      console.log('[TIP] Contract:', DID_YOU_KNOW_CONTRACT_ADDRESS);
 
       sendCalls({
         calls: [
@@ -180,9 +145,9 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
         ],
       });
 
-      setDebugMessage(`✅ Transaction sent! Waiting for approval...`);
+      setDebugMessage(`✅ Transaction sent!`);
     } catch (error) {
-      console.error('[FACT] Error:', error);
+      console.error('[TIP] Error:', error);
       if (error instanceof Error) {
         setDebugMessage(`❌ Error: ${error.message}`);
       } else {
@@ -250,20 +215,6 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
               </h3>
             </div>
 
-            {hasAcknowledgedCurrent && (
-              <div style={{
-                marginBottom: '10px',
-                padding: '8px',
-                background: '#fef3c7',
-                borderRadius: '8px',
-                fontSize: '11px',
-                color: '#92400e',
-                fontWeight: '600'
-              }}>
-                ⚠️ You already acknowledged this fact. Refresh page to see a new one.
-              </div>
-            )}
-
             <div style={{
               marginBottom: '15px',
               padding: '16px',
@@ -283,57 +234,32 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
               Category: {currentFact.category}
             </div>
 
-            {hasAcknowledgedCurrent === true ? (
-              <button
-                onClick={() => {
-                  console.log('[FACT] User clicked to see another random fact');
-                  loadRandomFact();
-                  setDebugMessage('🔄 Loading another fact...');
-                }}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
-                  borderRadius: '12px',
-                  border: 'none',
-                  color: 'white',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(99,102,241,0.25)',
-                }}
-              >
-                💡 SHOW ME ANOTHER TIP
-              </button>
-            ) : (
-              <button
-                onClick={handleAcknowledgeFact}
-                disabled={isAcknowledging || isConfirming || !isConnected || isRefetchingData}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  background: isConfirmed
-                    ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
-                    : 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
-                  borderRadius: '12px',
-                  border: 'none',
-                  color: 'white',
-                  fontSize: '14px',
-                  fontWeight: 'bold',
-                  cursor: (isAcknowledging || isConfirming || !isConnected || isRefetchingData) ? 'not-allowed' : 'pointer',
-                  opacity: (isAcknowledging || isConfirming || isRefetchingData) ? 0.7 : 1,
-                  boxShadow: '0 4px 12px rgba(14,165,233,0.25)',
-                }}
-              >
-                {!isConnected ? 'CONNECT WALLET' :
-                 isAcknowledging ? 'SIGNING...' :
-                 isConfirming ? 'SAVING ON-CHAIN...' :
-                 isRefetchingData ? 'LOADING...' :
-                 isConfirmed ? 'SAVED ✅' :
-                 hasAcknowledgedCurrent ? 'GOT IT! 👍' :
-                 'GOT IT! (FREE)'}
-              </button>
-            )}
+            <button
+              onClick={handleAcknowledgeTip}
+              disabled={isAcknowledging || isConfirming || !isConnected || isRefetchingData}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: isConfirmed
+                  ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+                  : 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                borderRadius: '12px',
+                border: 'none',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                cursor: (isAcknowledging || isConfirming || !isConnected || isRefetchingData) ? 'not-allowed' : 'pointer',
+                opacity: (isAcknowledging || isConfirming || isRefetchingData) ? 0.7 : 1,
+                boxShadow: '0 4px 12px rgba(14,165,233,0.25)',
+              }}
+            >
+              {!isConnected ? 'CONNECT WALLET' :
+               isAcknowledging ? 'SIGNING...' :
+               isConfirming ? 'SAVING ON-CHAIN...' :
+               isRefetchingData ? 'LOADING...' :
+               isConfirmed ? 'SAVED ✅' :
+               'GOT IT! (FREE)'}
+            </button>
 
             {isConfirmed && (
               <div style={{
@@ -382,20 +308,6 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
               </div>
             )}
 
-            {/* Debug info - shows acknowledged facts */}
-            {/* Debug info - only show if there's an error */}
-            {fetchFactsError && (
-              <div style={{
-                marginTop: '10px',
-                padding: '8px',
-                background: '#fee',
-                borderRadius: '8px',
-                fontSize: '11px',
-                color: '#dc3545',
-              }}>
-                <div><strong>❌ Error:</strong> {String(fetchFactsError).slice(0, 100)}</div>
-              </div>
-            )}
           </div>
         )}
 
