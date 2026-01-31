@@ -49,17 +49,24 @@ function SuccessContent() {
     data: callsStatus,
     isLoading: isConfirming
   } = useCallsStatus({
-    id: callsId || sendCallsId,
+    id: callsId as string,
+    query: {
+      enabled: !!callsId,
+    },
   });
 
   // Update callsId when sendCalls returns an ID
   useEffect(() => {
     if (sendCallsId) {
-      setCallsId(sendCallsId);
+      // Extract the ID string from the sendCallsId response
+      const id = typeof sendCallsId === 'string' ? sendCallsId : sendCallsId?.id;
+      if (id) {
+        setCallsId(id);
+      }
     }
   }, [sendCallsId]);
 
-  const isConfirmed = callsStatus?.status === 'CONFIRMED';
+  const isConfirmed = callsStatus?.status === 'success';
   const txHash = callsStatus?.receipts?.[0]?.transactionHash;
 
   // Update countdown timer every second (TEST MODE: 1 minute countdown)
@@ -152,9 +159,13 @@ function SuccessContent() {
       console.log('[CHECKIN] Transaction confirmed:', txHash);
       return { type: 'success', message: `Transaction confirmed! View on BaseScan: https://basescan.org/tx/${txHash}` };
     }
-    if (callsStatus?.status === 'PENDING') {
+    if (callsStatus?.status === 'pending') {
       console.log('[CHECKIN] Transaction pending, ID:', callsId);
       return { type: 'pending', message: `Transaction pending (ID: ${callsId})` };
+    }
+    if (callsStatus?.status === 'failure') {
+      console.log('[CHECKIN] Transaction failed');
+      return { type: 'error', message: 'Transaction failed. Please try again.' };
     }
     if (sendCallsId) {
       console.log('[CHECKIN] Calls sent, ID:', sendCallsId);
@@ -226,7 +237,7 @@ function SuccessContent() {
                 padding: '18px 30px',
                 background: isConfirmed
                   ? 'linear-gradient(135deg, #28a745 0%, #20c997 100%)'
-                  : writeError || confirmError
+                  : writeError
                   ? 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)'
                   : 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
                 borderRadius: '16px',

@@ -591,19 +591,14 @@ const ALL_QUESTIONS: QuizQuestion[] = [
 
 ];
 
-// Get daily questions (5 questions that change each day)
+// Get daily questions (5 random questions each time)
 export function getDailyQuestions(): QuizQuestion[] {
-  const today = new Date();
-  // Use date as seed for consistent daily selection
-  const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
-
-  // Simple seeded shuffle using day of year
+  // Shuffle questions randomly using current timestamp + Math.random()
   const shuffled = [...ALL_QUESTIONS];
-  let seed = dayOfYear;
 
+  // Fisher-Yates shuffle with random seed
   for (let i = shuffled.length - 1; i > 0; i--) {
-    seed = (seed * 9301 + 49297) % 233280;
-    const j = seed % (i + 1);
+    const j = Math.floor(Math.random() * (i + 1));
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
 
