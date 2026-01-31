@@ -63,21 +63,21 @@ export default function Home() {
     }
   }, [setFrameReady, isFrameReady]);
 
-  // Load Farcaster user data from SDK
+  // Load user data from Base app (works for all users, not just Farcaster)
   useEffect(() => {
-    const loadFarcasterUser = async () => {
+    const loadUserFromBaseApp = async () => {
       try {
-        const isInMiniApp = await sdk.isInMiniApp();
-        if (isInMiniApp) {
-          const sdkContext = await sdk.context;
-          console.log('[DEBUG] Farcaster SDK context:', sdkContext);
+        const sdkContext = await sdk.context;
+        console.log('[DEBUG] Base app user context:', sdkContext);
+        if (sdkContext?.user) {
           setFarcasterUser(sdkContext.user);
+          console.log('[DEBUG] User pfpUrl:', sdkContext.user.pfpUrl);
         }
       } catch (err) {
-        console.error('[ERROR] Failed to load Farcaster user:', err);
+        console.error('[ERROR] Failed to load Base app user:', err);
       }
     };
-    loadFarcasterUser();
+    loadUserFromBaseApp();
   }, []);
 
   useEffect(() => {
