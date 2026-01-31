@@ -105,7 +105,7 @@ function SuccessContent() {
         address: CHECKIN_CONTRACT_ADDRESS,
         abi: CHECKIN_CONTRACT_ABI,
         functionName: 'checkIn',
-        gas: 100000n, // Explicit gas limit to avoid estimation issues
+        gas: BigInt(100000), // Explicit gas limit to avoid estimation issues
       });
     } catch (error) {
       console.error('[CHECKIN] Error:', error);
