@@ -1,8 +1,7 @@
 "use client";
 
-// Force dynamic rendering and disable static optimization
+// Force dynamic rendering - don't prerender at build time
 export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
 
 import { useState, useEffect } from "react";
 import { useMiniKit } from "@coinbase/onchainkit/minikit";
