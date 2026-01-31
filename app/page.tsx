@@ -191,20 +191,9 @@ export default function Home() {
     );
   }
 
-  // Loading state
+  // Loading state - show nothing, just wait
   if (loading || !userData) {
-    return (
-      <div className={styles.container}>
-        <div className={styles.content}>
-          <div className={styles.waitlistForm}>
-            <h1 className={styles.title}>Loading...</h1>
-            <p className={styles.subtitle}>
-              Initializing your quiz experience...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // If questions didn't load, try to load them again
@@ -221,7 +210,7 @@ export default function Home() {
     return (
       <div className={styles.container}>
         <div className={styles.content}>
-          <Dashboard userData={userData} onStartQuiz={handleStartQuiz} />
+          <Dashboard userData={userData} onStartQuiz={handleStartQuiz} userContext={context} />
         </div>
       </div>
     );

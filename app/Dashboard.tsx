@@ -12,24 +12,45 @@ import styles from './Dashboard.module.css';
 interface DashboardProps {
   userData: UserStats;
   onStartQuiz: () => void;
+  userContext?: {
+    user?: {
+      fid?: number;
+      username?: string;
+      displayName?: string;
+      pfpUrl?: string;
+    };
+  } | null;
 }
 
-export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
+export default function Dashboard({ userData, onStartQuiz, userContext }: DashboardProps) {
   const playedToday = hasPlayedToday(userData);
   const { address, isConnected } = useAccount();
 
   // Crypto Tips state
   const [currentFact, setCurrentFact] = useState(DID_YOU_KNOW_FACTS[0]);
   const [callsId, setCallsId] = useState<string>();
+  const [isFading, setIsFading] = useState(false);
 
   const isContractDeployed = DID_YOU_KNOW_CONTRACT_ADDRESS.length === 42 && DID_YOU_KNOW_CONTRACT_ADDRESS.startsWith('0x');
 
-  // Load a random tip
-  const loadRandomTip = useCallback(() => {
-    // Pick a random tip
-    const randomTipId = Math.floor(Math.random() * 20);
+  // Load a random tip (different from current)
+  const loadRandomTip = useCallback((avoidCurrentId?: number) => {
+    // Pick a random tip that's different from current
+    let randomTipId;
+    do {
+      randomTipId = Math.floor(Math.random() * 20);
+    } while (randomTipId === avoidCurrentId && DID_YOU_KNOW_FACTS.length > 1);
+
     console.log('[TIP] Showing random tip:', randomTipId);
-    setCurrentFact(DID_YOU_KNOW_FACTS[randomTipId]);
+
+    // Fade out current tip
+    setIsFading(true);
+
+    // After fade out, show new tip
+    setTimeout(() => {
+      setCurrentFact(DID_YOU_KNOW_FACTS[randomTipId]);
+      setIsFading(false);
+    }, 200);
   }, []);
 
   // Load random tip on mount
@@ -77,28 +98,28 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
   const isConfirmed = callsStatus?.status === 'success';
 
 
-  // When transaction is confirmed, show another random tip
+  // When transaction is confirmed, show another random tip (different from current)
   useEffect(() => {
     if (isConfirmed) {
       console.log('[TIP] Transaction confirmed, showing another random tip...');
 
       const reloadAfterTransaction = async () => {
-        // Wait 1 second then show another random tip
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Wait 500ms then show another random tip
+        await new Promise(resolve => setTimeout(resolve, 500));
 
-        // Show another random tip
-        loadRandomTip();
+        // Show another random tip (avoid current one)
+        loadRandomTip(currentFact.id);
 
         // Clear transaction state
         setTimeout(() => {
           console.log('[TIP] Clearing transaction state');
           setCallsId(undefined);
-        }, 500);
+        }, 300);
       };
 
       reloadAfterTransaction();
     }
-  }, [isConfirmed, loadRandomTip]);
+  }, [isConfirmed, loadRandomTip, currentFact.id]);
 
   const handleAcknowledgeTip = async () => {
     if (!isConnected || !address) {
@@ -150,8 +171,26 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
         {/* Header */}
         <header className={styles.header}>
           <div className={styles.greeting}>
-            <h1 className={styles.welcomeText}>Welcome back,</h1>
-            <h2 className={styles.username}>{userData.username || 'Crypto Explorer'}!</h2>
+            {userContext?.user?.pfpUrl && (
+              <Image
+                src={userContext.user.pfpUrl}
+                alt="Profile"
+                width={48}
+                height={48}
+                style={{
+                  borderRadius: '50%',
+                  marginRight: '12px',
+                  objectFit: 'cover',
+                  border: '2px solid #FF6B35'
+                }}
+              />
+            )}
+            <div>
+              <h1 className={styles.welcomeText}>Welcome back,</h1>
+              <h2 className={styles.username}>
+                {userContext?.user?.displayName || userContext?.user?.username || userData.username || 'Crypto Explorer'}!
+              </h2>
+            </div>
           </div>
         </header>
 
@@ -198,14 +237,23 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
               border: '1px solid #bae6fd',
               minHeight: '80px',
               display: 'flex',
-              alignItems: 'center'
+              alignItems: 'center',
+              transition: 'opacity 0.2s ease-in-out',
+              opacity: isFading ? 0 : 1
             }}>
               <p style={{ margin: 0, lineHeight: '1.6', color: '#1e293b', fontSize: '14px' }}>
                 {currentFact.fact}
               </p>
             </div>
 
-            <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '12px', fontWeight: '600' }}>
+            <div style={{
+              fontSize: '11px',
+              color: '#64748b',
+              marginBottom: '12px',
+              fontWeight: '600',
+              transition: 'opacity 0.2s ease-in-out',
+              opacity: isFading ? 0 : 1
+            }}>
               Category: {currentFact.category}
             </div>
 
