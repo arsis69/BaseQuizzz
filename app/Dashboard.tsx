@@ -25,7 +25,7 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
   const isContractDeployed = DID_YOU_KNOW_CONTRACT_ADDRESS.length === 42 && DID_YOU_KNOW_CONTRACT_ADDRESS.startsWith('0x');
 
   // Get user's acknowledged facts from contract
-  const { data: acknowledgedFactsData, refetch: refetchAcknowledgedFacts } = useReadContract({
+  const { data: acknowledgedFactsData, refetch: refetchAcknowledgedFacts, error: fetchFactsError } = useReadContract({
     address: DID_YOU_KNOW_CONTRACT_ADDRESS as `0x${string}`,
     abi: DID_YOU_KNOW_CONTRACT_ABI,
     functionName: 'getUserAcknowledgedFacts',
@@ -34,6 +34,15 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
       enabled: !!address && isContractDeployed,
     },
   });
+
+  // Debug contract read
+  useEffect(() => {
+    console.log('[CONTRACT] Read getUserAcknowledgedFacts');
+    console.log('[CONTRACT] Address:', address);
+    console.log('[CONTRACT] Contract:', DID_YOU_KNOW_CONTRACT_ADDRESS);
+    console.log('[CONTRACT] Data:', acknowledgedFactsData);
+    console.log('[CONTRACT] Error:', fetchFactsError);
+  }, [acknowledgedFactsData, fetchFactsError, address]);
 
   // Get total acknowledged count
   const { data: totalAcknowledged, refetch: refetchTotalAcknowledged } = useReadContract({
@@ -45,6 +54,21 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
       enabled: !!address && isContractDeployed,
     },
   });
+
+  // Test: Check if user has acknowledged fact 0 specifically
+  const { data: hasAcknowledgedFact0 } = useReadContract({
+    address: DID_YOU_KNOW_CONTRACT_ADDRESS as `0x${string}`,
+    abi: DID_YOU_KNOW_CONTRACT_ABI,
+    functionName: 'hasUserAcknowledgedFact',
+    args: address ? [address, BigInt(0)] : undefined,
+    query: {
+      enabled: !!address && isContractDeployed,
+    },
+  });
+
+  useEffect(() => {
+    console.log('[CONTRACT] hasAcknowledgedFact0:', hasAcknowledgedFact0);
+  }, [hasAcknowledgedFact0]);
 
   // sendCalls for acknowledging facts
   const {
@@ -402,7 +426,11 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
             }}>
               <div><strong>Current Fact ID:</strong> {currentFact.id}</div>
               <div><strong>✅ Acknowledged:</strong> {acknowledgedFactsArray.length > 0 ? acknowledgedFactsArray.join(', ') : 'None yet'}</div>
+              <div><strong>📊 Total Count:</strong> {totalAcknowledged ? String(totalAcknowledged) : '0'}</div>
+              <div><strong>🔍 Has Fact 0?:</strong> {hasAcknowledgedFact0 === true ? 'YES' : hasAcknowledgedFact0 === false ? 'NO' : 'Loading...'}</div>
+              <div><strong>📦 Raw Data:</strong> {acknowledgedFactsData ? JSON.stringify(acknowledgedFactsData).slice(0, 50) : 'null'}</div>
               {isConnected && <div><strong>👛 Wallet:</strong> {address?.slice(0, 6)}...{address?.slice(-4)}</div>}
+              {fetchFactsError && <div style={{ color: '#dc3545' }}><strong>❌ Error:</strong> {String(fetchFactsError).slice(0, 50)}</div>}
             </div>
           </div>
         )}
