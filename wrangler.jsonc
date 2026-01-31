@@ -14,7 +14,7 @@
     "NEXT_PUBLIC_URL": "https://basequiz.arsssn85.workers.dev",
     "NEXT_PUBLIC_SUPABASE_URL": "your-supabase-project-url",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "your-supabase-anon-key",
-    "NEXT_PUBLIC_ONCHAINKIT_API_KEY": "",
+    "NEXT_PUBLIC_ONCHAINKIT_API_KEY": "dbc04b63-1158-4d67-a4b4-51611da7fdb4",
     "NEXT_PUBLIC_PROJECT_NAME": "Crypto Quiz"
   }
 }
