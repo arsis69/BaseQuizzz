@@ -1,7 +1,7 @@
 // CryptoTips Contract - Allows re-acknowledging same tip multiple times
-// TODO: Deploy the new CryptoTips.sol contract and update this address
+// Deployed on Base Mainnet
 
-export const DID_YOU_KNOW_CONTRACT_ADDRESS = '0x18F30d7643ADc75cc632bE9F6572ED5a9C7621cA'; // OLD CONTRACT - UPDATE THIS!
+export const DID_YOU_KNOW_CONTRACT_ADDRESS = '0x2905E525036166C6c143FDbfc92405dfDd48E33e';
 
 export const DID_YOU_KNOW_CONTRACT_ABI = [
   {
