@@ -1,5 +1,5 @@
 // User data management using Supabase with Farcaster ID
-import { supabase } from './supabaseClient';
+import { supabase, isSupabaseConfigured } from './supabaseClient';
 
 export interface QuizAttempt {
   date: string; // YYYY-MM-DD format
@@ -108,6 +108,12 @@ function userStatsToDb(userData: UserStats) {
 }
 
 export async function getUserData(fid: number, username: string): Promise<UserStats> {
+  // If Supabase is not configured, return a new user immediately (testing mode)
+  if (!isSupabaseConfigured) {
+    console.log('Supabase not configured, using local mode');
+    return createNewUser(fid, username);
+  }
+
   try {
     const { data, error } = await supabase
       .from('user_stats')
@@ -133,6 +139,12 @@ export async function getUserData(fid: number, username: string): Promise<UserSt
 }
 
 export async function saveUserData(userData: UserStats): Promise<void> {
+  // Skip saving if Supabase is not configured
+  if (!isSupabaseConfigured) {
+    console.log('Supabase not configured, skipping save');
+    return;
+  }
+
   try {
     const dbData = userStatsToDb(userData);
 
