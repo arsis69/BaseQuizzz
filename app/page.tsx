@@ -23,7 +23,21 @@ export default function Home() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const router = useRouter();
+
+  // Timeout for loading state (10 seconds)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading) {
+        console.log('[DEBUG] Loading timeout reached');
+        setLoadingTimeout(true);
+        setLoading(false);
+      }
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   // Initialize the miniapp and load user data
   useEffect(() => {
@@ -159,16 +173,28 @@ export default function Home() {
   }
 
   // Loading state
-  if (loading || !userData || questions.length === 0) {
+  if (loading || !userData) {
     return (
       <div className={styles.container}>
         <div className={styles.content}>
           <div className={styles.waitlistForm}>
             <h1 className={styles.title}>Loading...</h1>
+            <p className={styles.subtitle}>
+              Initializing your quiz experience...
+            </p>
           </div>
         </div>
       </div>
     );
+  }
+
+  // If questions didn't load, try to load them again
+  if (questions.length === 0) {
+    console.log('[DEBUG] Questions empty, loading again...');
+    const dailyQuestions = getDailyQuestions();
+    if (dailyQuestions.length > 0) {
+      setQuestions(dailyQuestions);
+    }
   }
 
   // Dashboard view

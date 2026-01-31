@@ -9,13 +9,12 @@
     "command": "npm run build"
   },
 
-  // Environment variables (configure these in Cloudflare dashboard)
+  // Environment variables
   "vars": {
-    // Add your environment variables in Cloudflare dashboard:
-    // NEXT_PUBLIC_URL
-    // NEXT_PUBLIC_SUPABASE_URL
-    // NEXT_PUBLIC_SUPABASE_ANON_KEY
-    // NEXT_PUBLIC_ONCHAINKIT_API_KEY
-    // NEXT_PUBLIC_PROJECT_NAME
+    "NEXT_PUBLIC_URL": "https://basequiz.arsssn85.workers.dev",
+    "NEXT_PUBLIC_SUPABASE_URL": "your-supabase-project-url",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "your-supabase-anon-key",
+    "NEXT_PUBLIC_ONCHAINKIT_API_KEY": "",
+    "NEXT_PUBLIC_PROJECT_NAME": "Crypto Quiz"
   }
 }
