@@ -27,7 +27,9 @@ export default function Home() {
 
   // Initialize the miniapp and load user data
   useEffect(() => {
+    console.log('[DEBUG] Frame ready effect - isFrameReady:', isFrameReady);
     if (!isFrameReady) {
+      console.log('[DEBUG] Setting frame ready');
       setFrameReady();
     }
   }, [setFrameReady, isFrameReady]);
@@ -36,6 +38,8 @@ export default function Home() {
     // Load user data when context is available (or use default for testing)
     async function loadUserData() {
       try {
+        console.log('[DEBUG] Starting loadUserData...');
+        console.log('[DEBUG] Context:', context);
         setLoading(true);
         setError(null);
 
@@ -47,7 +51,10 @@ export default function Home() {
           username = context.user.displayName || context.user.username || 'User';
         }
 
+        console.log('[DEBUG] FID:', fid, 'Username:', username);
+
         const data = await getUserData(fid, username);
+        console.log('[DEBUG] User data loaded:', data);
 
         // Update username if it changed (fixes TestUser issue)
         if (data.username !== username) {
@@ -58,13 +65,18 @@ export default function Home() {
         }
 
         setUserData(data);
+        console.log('[DEBUG] User data state set');
 
         // Load daily questions
-        setQuestions(getDailyQuestions());
+        const dailyQuestions = getDailyQuestions();
+        console.log('[DEBUG] Daily questions:', dailyQuestions.length);
+        setQuestions(dailyQuestions);
+        console.log('[DEBUG] Questions state set');
       } catch (err) {
-        console.error('Error loading user data:', err);
+        console.error('[ERROR] Error loading user data:', err);
         setError('Failed to load your data. Please try again.');
       } finally {
+        console.log('[DEBUG] Setting loading to false');
         setLoading(false);
       }
     }

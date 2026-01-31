@@ -5,9 +5,13 @@ import { OnchainKitProvider } from "@coinbase/onchainkit";
 import "@coinbase/onchainkit/styles.css";
 
 export function RootProvider({ children }: { children: ReactNode }) {
+  console.log('[DEBUG] RootProvider rendering');
+  const apiKey = process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY;
+  console.log('[DEBUG] OnchainKit API Key:', apiKey && apiKey !== 'your-cdp-api-key' ? 'Present' : 'Missing');
+
   return (
     <OnchainKitProvider
-      apiKey={process.env.NEXT_PUBLIC_ONCHAINKIT_API_KEY}
+      apiKey={apiKey && apiKey !== 'your-cdp-api-key' ? apiKey : undefined}
       chain={base}
       config={{
         appearance: {
