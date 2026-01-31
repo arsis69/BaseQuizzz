@@ -1,7 +1,8 @@
 "use client";
 
-// Force dynamic rendering - don't prerender at build time
+// Force dynamic rendering and disable static optimization
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 import { useState, useEffect } from "react";
 import { useMiniKit } from "@coinbase/onchainkit/minikit";
@@ -40,9 +41,17 @@ export default function Home() {
   // Initialize the miniapp and load user data
   useEffect(() => {
     console.log('[DEBUG] Frame ready effect - isFrameReady:', isFrameReady);
-    if (!isFrameReady) {
-      console.log('[DEBUG] Setting frame ready');
-      setFrameReady();
+    console.log('[DEBUG] setFrameReady function:', typeof setFrameReady);
+
+    // Try to set frame ready, but don't fail if it errors
+    try {
+      if (!isFrameReady && setFrameReady) {
+        console.log('[DEBUG] Calling setFrameReady');
+        setFrameReady();
+      }
+    } catch (err) {
+      console.error('[ERROR] setFrameReady failed:', err);
+      // Continue anyway - don't block the app
     }
   }, [setFrameReady, isFrameReady]);
 
@@ -52,6 +61,7 @@ export default function Home() {
       try {
         console.log('[DEBUG] Starting loadUserData...');
         console.log('[DEBUG] Context:', context);
+        console.log('[DEBUG] isFrameReady:', isFrameReady);
         setLoading(true);
         setError(null);
 
@@ -59,8 +69,11 @@ export default function Home() {
         let username = 'TestUser';
 
         if (context?.user) {
+          console.log('[DEBUG] Context user found');
           fid = context.user.fid;
           username = context.user.displayName || context.user.username || 'User';
+        } else {
+          console.log('[DEBUG] No context user, using defaults');
         }
 
         console.log('[DEBUG] FID:', fid, 'Username:', username);
@@ -86,6 +99,7 @@ export default function Home() {
         console.log('[DEBUG] Questions state set');
       } catch (err) {
         console.error('[ERROR] Error loading user data:', err);
+        console.error('[ERROR] Stack:', err instanceof Error ? err.stack : 'No stack');
         setError('Failed to load your data. Please try again.');
       } finally {
         console.log('[DEBUG] Setting loading to false');
@@ -93,8 +107,9 @@ export default function Home() {
       }
     }
 
+    console.log('[DEBUG] useEffect triggered, calling loadUserData');
     loadUserData();
-  }, [context]);
+  }, [context, isFrameReady]);
 
   const handleStartQuiz = () => {
     setView('quiz');
