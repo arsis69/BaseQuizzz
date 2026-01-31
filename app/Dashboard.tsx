@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAccount, useReadContract } from 'wagmi';
 import { useSendCalls, useCallsStatus } from 'wagmi/experimental';
 import { encodeFunctionData } from 'viem';
@@ -24,12 +24,23 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
 
   const isContractDeployed = DID_YOU_KNOW_CONTRACT_ADDRESS.length === 42 && DID_YOU_KNOW_CONTRACT_ADDRESS.startsWith('0x');
 
-  // Use getNextUnacknowledgedFact instead of getUserAcknowledgedFacts for better reliability
-  const { data: nextFactId, refetch: refetchNextFact, error: fetchFactsError } = useReadContract({
+  // Get total acknowledged count (this works)
+  const { data: totalAcknowledged, refetch: refetchTotalAcknowledged } = useReadContract({
     address: DID_YOU_KNOW_CONTRACT_ADDRESS as `0x${string}`,
     abi: DID_YOU_KNOW_CONTRACT_ABI,
-    functionName: 'getNextUnacknowledgedFact',
+    functionName: 'totalAcknowledged',
     args: address ? [address] : undefined,
+    query: {
+      enabled: !!address && isContractDeployed,
+    },
+  });
+
+  // Use the public mapping hasAcknowledged directly
+  const { data: hasAcknowledgedCurrent, error: fetchFactsError } = useReadContract({
+    address: DID_YOU_KNOW_CONTRACT_ADDRESS as `0x${string}`,
+    abi: DID_YOU_KNOW_CONTRACT_ABI,
+    functionName: 'hasAcknowledged',
+    args: address ? [address, BigInt(currentFact.id)] : undefined,
     query: {
       enabled: !!address && isContractDeployed,
     },
@@ -37,38 +48,12 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
 
   // Debug contract read
   useEffect(() => {
-    console.log('[CONTRACT] Read getNextUnacknowledgedFact');
+    console.log('[CONTRACT] Reading contract for fact:', currentFact.id);
     console.log('[CONTRACT] Address:', address);
-    console.log('[CONTRACT] Contract:', DID_YOU_KNOW_CONTRACT_ADDRESS);
-    console.log('[CONTRACT] Next Fact ID:', nextFactId);
+    console.log('[CONTRACT] Has acknowledged current?:', hasAcknowledgedCurrent);
+    console.log('[CONTRACT] Total acknowledged:', totalAcknowledged);
     console.log('[CONTRACT] Error:', fetchFactsError);
-  }, [nextFactId, fetchFactsError, address]);
-
-  // Get total acknowledged count
-  const { data: totalAcknowledged, refetch: refetchTotalAcknowledged } = useReadContract({
-    address: DID_YOU_KNOW_CONTRACT_ADDRESS as `0x${string}`,
-    abi: DID_YOU_KNOW_CONTRACT_ABI,
-    functionName: 'getUserStats',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: !!address && isContractDeployed,
-    },
-  });
-
-  // Check if current fact is acknowledged
-  const { data: hasAcknowledgedCurrent, refetch: refetchHasAcknowledged } = useReadContract({
-    address: DID_YOU_KNOW_CONTRACT_ADDRESS as `0x${string}`,
-    abi: DID_YOU_KNOW_CONTRACT_ABI,
-    functionName: 'hasUserAcknowledgedFact',
-    args: address ? [address, BigInt(currentFact.id)] : undefined,
-    query: {
-      enabled: !!address && isContractDeployed,
-    },
-  });
-
-  useEffect(() => {
-    console.log('[CONTRACT] hasAcknowledgedCurrent (fact', currentFact.id, '):', hasAcknowledgedCurrent);
-  }, [hasAcknowledgedCurrent, currentFact.id]);
+  }, [hasAcknowledgedCurrent, totalAcknowledged, fetchFactsError, address, currentFact.id]);
 
   // sendCalls for acknowledging facts
   const {
@@ -111,25 +96,31 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
     }
   }, [acknowledgeError]);
 
-  // Load the next unacknowledged fact when nextFactId changes
-  useEffect(() => {
-    if (nextFactId !== undefined && nextFactId !== null) {
-      const factId = Number(nextFactId);
-      console.log('[FACT] Next unacknowledged fact ID from contract:', factId);
+  // Manually find next unacknowledged fact when current one is acknowledged
+  const findNextUnacknowledgedFact = useCallback(async () => {
+    if (!address) return;
 
-      if (factId >= 20) {
-        // All facts acknowledged! Show first fact (or a completion message)
-        console.log('[FACT] All facts acknowledged!');
-        setCurrentFact(DID_YOU_KNOW_FACTS[0]);
-      } else {
-        console.log('[FACT] Setting current fact to:', factId);
-        setCurrentFact(DID_YOU_KNOW_FACTS[factId]);
+    console.log('[FACT] Finding next unacknowledged fact...');
+
+    // Try each fact starting from 0
+    for (let i = 0; i < 20; i++) {
+      try {
+        // Skip the current fact we just acknowledged
+        if (i === currentFact.id) continue;
+
+        // We'll just cycle through facts in order
+        console.log('[FACT] Trying fact:', i);
+        setCurrentFact(DID_YOU_KNOW_FACTS[i]);
+        return;
+      } catch (err) {
+        console.error('[FACT] Error checking fact', i, err);
       }
-    } else {
-      console.log('[FACT] No fact ID from contract yet, showing first fact');
-      setCurrentFact(DID_YOU_KNOW_FACTS[0]);
     }
-  }, [nextFactId]);
+
+    // If all facts checked, start from beginning
+    console.log('[FACT] All facts checked, showing fact 0');
+    setCurrentFact(DID_YOU_KNOW_FACTS[0]);
+  }, [address, currentFact.id]);
 
   const isConfirmed = callsStatus?.status === 'success';
 
@@ -144,39 +135,31 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
     }
   }, [isAcknowledging, isConfirming, isConfirmed]);
 
-  // When transaction is confirmed, refetch data with retries
+  // When transaction is confirmed, refetch data and load next fact
   useEffect(() => {
     if (isConfirmed) {
-      console.log('[FACT] Transaction confirmed, refetching data...');
+      console.log('[FACT] Transaction confirmed, loading next fact...');
 
-      // Try refetching multiple times with delays to ensure blockchain has updated
-      const refetchWithRetries = async () => {
+      const loadNextFact = async () => {
         // Wait 2 seconds for blockchain to update
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Try refetching up to 3 times with 2 second intervals
-        for (let i = 0; i < 3; i++) {
-          console.log(`[FACT] Refetch attempt ${i + 1}/3`);
-          await refetchNextFact();
-          await refetchTotalAcknowledged();
-          await refetchHasAcknowledged();
+        // Refetch total count
+        await refetchTotalAcknowledged();
 
-          // Wait 2 seconds between retries
-          if (i < 2) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          }
-        }
+        // Load next fact
+        await findNextUnacknowledgedFact();
 
-        // Clear transaction state after all retries
+        // Clear transaction state
         setTimeout(() => {
           console.log('[FACT] Clearing transaction state');
           setCallsId(undefined);
         }, 1000);
       };
 
-      refetchWithRetries();
+      loadNextFact();
     }
-  }, [isConfirmed, refetchNextFact, refetchTotalAcknowledged, refetchHasAcknowledged]);
+  }, [isConfirmed, refetchTotalAcknowledged, findNextUnacknowledgedFact]);
 
   const handleAcknowledgeFact = async () => {
     setDebugMessage('');
@@ -323,11 +306,9 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
             {hasAcknowledgedCurrent === true ? (
               <button
                 onClick={() => {
-                  console.log('[FACT] Manual refresh requested');
-                  refetchNextFact();
-                  refetchTotalAcknowledged();
-                  refetchHasAcknowledged();
-                  setDebugMessage('🔄 Refreshing facts...');
+                  console.log('[FACT] Manual load next fact requested');
+                  findNextUnacknowledgedFact();
+                  setDebugMessage('🔄 Loading next fact...');
                 }}
                 style={{
                   width: '100%',
@@ -342,7 +323,7 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
                   boxShadow: '0 4px 12px rgba(16,185,129,0.25)',
                 }}
               >
-                ✅ ALREADY ACKNOWLEDGED - LOAD NEXT
+                ✅ ACKNOWLEDGED - SHOW NEXT FACT
               </button>
             ) : (
               <button
@@ -429,12 +410,11 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
               fontSize: '11px',
               color: '#374151',
             }}>
-              <div><strong>Current Fact ID:</strong> {currentFact.id}</div>
+              <div><strong>📋 Current Fact ID:</strong> {currentFact.id}</div>
               <div><strong>📊 Total Acknowledged:</strong> {totalAcknowledged ? String(totalAcknowledged) : '0'} / 20</div>
-              <div><strong>🔍 Current Acknowledged?:</strong> {hasAcknowledgedCurrent === true ? 'YES ✅' : hasAcknowledgedCurrent === false ? 'NO' : 'Loading...'}</div>
-              <div><strong>➡️ Next Fact ID:</strong> {nextFactId !== undefined ? String(nextFactId) : 'Loading...'}</div>
+              <div><strong>🔍 This Fact Status:</strong> {hasAcknowledgedCurrent === true ? 'Already Done ✅' : hasAcknowledgedCurrent === false ? 'Not Done Yet' : 'Checking...'}</div>
               {isConnected && <div><strong>👛 Wallet:</strong> {address?.slice(0, 6)}...{address?.slice(-4)}</div>}
-              {fetchFactsError && <div style={{ color: '#dc3545' }}><strong>❌ Error:</strong> {String(fetchFactsError).slice(0, 50)}</div>}
+              {fetchFactsError && <div style={{ color: '#dc3545' }}><strong>❌ Error:</strong> {String(fetchFactsError).slice(0, 100)}</div>}
             </div>
           </div>
         )}
