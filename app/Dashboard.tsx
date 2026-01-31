@@ -66,31 +66,16 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
     }
   }, [sendCallsId]);
 
-  // Log acknowledge errors and show on screen
+  // Log acknowledge errors
   useEffect(() => {
     if (acknowledgeError) {
-      console.error('[FACT] Error:', acknowledgeError);
-      if (acknowledgeError instanceof Error) {
-        setDebugMessage(`❌ ERROR: ${acknowledgeError.message}`);
-      } else {
-        setDebugMessage(`❌ ERROR: Transaction failed`);
-      }
+      console.error('[TIP] Error:', acknowledgeError);
     }
   }, [acknowledgeError]);
 
 
   const isConfirmed = callsStatus?.status === 'success';
 
-  // Update debug message based on transaction status
-  useEffect(() => {
-    if (isAcknowledging) {
-      setDebugMessage('⏳ Waiting for wallet approval...');
-    } else if (isConfirming) {
-      setDebugMessage('⏳ Confirming transaction on blockchain...');
-    } else if (isConfirmed) {
-      setDebugMessage('🎉 Success! Loading next fact...');
-    }
-  }, [isAcknowledging, isConfirming, isConfirmed]);
 
   // When transaction is confirmed, show another random tip
   useEffect(() => {
@@ -116,16 +101,12 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
   }, [isConfirmed, loadRandomTip]);
 
   const handleAcknowledgeTip = async () => {
-    setDebugMessage('');
-
     if (!isConnected || !address) {
-      setDebugMessage('❌ Wallet not connected');
+      console.log('[TIP] Wallet not connected');
       return;
     }
 
     try {
-      setDebugMessage(`🚀 Recording on blockchain...`);
-
       const data = encodeFunctionData({
         abi: DID_YOU_KNOW_CONTRACT_ABI,
         functionName: 'acknowledgeTip',
@@ -145,20 +126,14 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
         ],
       });
 
-      setDebugMessage(`✅ Transaction sent!`);
+      console.log('[TIP] Transaction sent!');
     } catch (error) {
       console.error('[TIP] Error:', error);
-      if (error instanceof Error) {
-        setDebugMessage(`❌ Error: ${error.message}`);
-      } else {
-        setDebugMessage(`❌ Error: ${JSON.stringify(error)}`);
-      }
     }
   };
 
   // Show loading state while refetching after confirmation
   const [isRefetchingData, setIsRefetchingData] = useState(false);
-  const [debugMessage, setDebugMessage] = useState<string>('');
 
   useEffect(() => {
     if (isConfirmed && !isRefetchingData) {
@@ -292,21 +267,6 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
               </div>
             )}
 
-            {/* Debug message */}
-            {debugMessage && (
-              <div style={{
-                marginTop: '10px',
-                padding: '10px',
-                background: debugMessage.includes('❌') ? '#fee2e2' : debugMessage.includes('🎉') ? '#d1fae5' : '#fef3c7',
-                borderRadius: '8px',
-                fontSize: '12px',
-                color: debugMessage.includes('❌') ? '#991b1b' : debugMessage.includes('🎉') ? '#065f46' : '#92400e',
-                fontWeight: '600',
-                textAlign: 'center'
-              }}>
-                {debugMessage}
-              </div>
-            )}
 
           </div>
         )}
