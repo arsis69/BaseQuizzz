@@ -1,0 +1,30 @@
+{
+  "accountAssociation": {
+    "header": "",
+    "payload": "",
+    "signature": ""
+  },
+  "miniapp": {
+    "version": "1",
+    "name": "Crypto Quiz",
+    "subtitle": "Test Your Blockchain Knowledge",
+    "description": "A fun 5-question quiz to test your crypto and blockchain basics",
+    "iconUrl": "https://basequiz.arsssn85.workers.dev/icon1.png",
+    "splashImageUrl": "https://basequiz.arsssn85.workers.dev/icon1.png",
+    "splashBackgroundColor": "#ffffff",
+    "homeUrl": "https://basequiz.arsssn85.workers.dev",
+    "webhookUrl": "https://basequiz.arsssn85.workers.dev/api/webhook",
+    "primaryCategory": "social",
+    "tags": ["quiz", "crypto", "blockchain", "education", "game"],
+    "screenshotUrls": [
+      "https://basequiz.arsssn85.workers.dev/1.png",
+      "https://basequiz.arsssn85.workers.dev/2.png",
+      "https://basequiz.arsssn85.workers.dev/3.png"
+    ],
+    "heroImageUrl": "https://basequiz.arsssn85.workers.dev/cover.png",
+    "tagline": "Test your crypto knowledge!",
+    "ogTitle": "Crypto Quiz Challenge",
+    "ogDescription": "Take this fun 5-question quiz to test your crypto and blockchain knowledge!",
+    "ogImageUrl": "https://basequiz.arsssn85.workers.dev/cover.png"
+  }
+}
