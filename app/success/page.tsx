@@ -6,7 +6,9 @@ export const dynamic = 'force-dynamic';
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useComposeCast } from '@coinbase/onchainkit/minikit';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useChainId } from 'wagmi';
+import { useAccount, useReadContract, useChainId } from 'wagmi';
+import { useSendCalls, useCallsStatus } from 'wagmi/experimental';
+import { encodeFunctionData } from 'viem';
 import { minikitConfig } from "../../minikit.config";
 import { CHECKIN_CONTRACT_ADDRESS, CHECKIN_CONTRACT_ABI } from "../contracts/checkInContract";
 import BottomNav from "../components/BottomNav";
@@ -34,21 +36,31 @@ function SuccessContent() {
     },
   });
 
-  const {
-    writeContract,
-    data: txHash,
-    isPending: isWriting,
-    error: writeError,
-    reset: resetWrite
-  } = useWriteContract();
+  const [callsId, setCallsId] = useState<string>();
 
   const {
-    isLoading: isConfirming,
-    isSuccess: isConfirmed,
-    error: confirmError
-  } = useWaitForTransactionReceipt({
-    hash: txHash,
+    sendCalls,
+    data: sendCallsId,
+    isPending: isWriting,
+    error: writeError
+  } = useSendCalls();
+
+  const {
+    data: callsStatus,
+    isLoading: isConfirming
+  } = useCallsStatus({
+    id: callsId || sendCallsId,
   });
+
+  // Update callsId when sendCalls returns an ID
+  useEffect(() => {
+    if (sendCallsId) {
+      setCallsId(sendCallsId);
+    }
+  }, [sendCallsId]);
+
+  const isConfirmed = callsStatus?.status === 'CONFIRMED';
+  const txHash = callsStatus?.receipts?.[0]?.transactionHash;
 
   // Update countdown timer every second (TEST MODE: 1 minute countdown)
   useEffect(() => {
@@ -95,17 +107,27 @@ function SuccessContent() {
     }
 
     try {
-      console.log('[CHECKIN] Starting check-in...');
+      console.log('[CHECKIN] Starting check-in with sendCalls...');
       console.log('[CHECKIN] Contract:', CHECKIN_CONTRACT_ADDRESS);
       console.log('[CHECKIN] User address:', address);
+      console.log('[CHECKIN] Chain ID:', chainId);
 
-      resetWrite();
-
-      writeContract({
-        address: CHECKIN_CONTRACT_ADDRESS,
+      // Encode the checkIn function call
+      const data = encodeFunctionData({
         abi: CHECKIN_CONTRACT_ABI,
         functionName: 'checkIn',
-        gas: BigInt(100000), // Explicit gas limit to avoid estimation issues
+      });
+
+      console.log('[CHECKIN] Encoded data:', data);
+
+      // Send the call using sendCalls
+      sendCalls({
+        calls: [
+          {
+            to: CHECKIN_CONTRACT_ADDRESS,
+            data,
+          },
+        ],
       });
     } catch (error) {
       console.error('[CHECKIN] Error:', error);
@@ -126,17 +148,17 @@ function SuccessContent() {
       console.error('[CHECKIN] Write error:', writeError);
       return { type: 'error', message: writeError.message };
     }
-    if (confirmError) {
-      console.error('[CHECKIN] Confirm error:', confirmError);
-      return { type: 'error', message: confirmError.message };
-    }
-    if (isConfirmed) {
+    if (isConfirmed && txHash) {
       console.log('[CHECKIN] Transaction confirmed:', txHash);
-      return { type: 'success', message: `Transaction confirmed! Hash: ${txHash}` };
+      return { type: 'success', message: `Transaction confirmed! View on BaseScan: https://basescan.org/tx/${txHash}` };
     }
-    if (txHash) {
-      console.log('[CHECKIN] Transaction sent:', txHash);
-      return { type: 'pending', message: `Transaction sent: ${txHash}. View on BaseScan: https://basescan.org/tx/${txHash}` };
+    if (callsStatus?.status === 'PENDING') {
+      console.log('[CHECKIN] Transaction pending, ID:', callsId);
+      return { type: 'pending', message: `Transaction pending (ID: ${callsId})` };
+    }
+    if (sendCallsId) {
+      console.log('[CHECKIN] Calls sent, ID:', sendCallsId);
+      return { type: 'pending', message: `Waiting for confirmation... (ID: ${sendCallsId})` };
     }
     return null;
   };
