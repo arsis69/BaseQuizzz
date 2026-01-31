@@ -15,7 +15,7 @@ export const minikitConfig = {
   },
   miniapp: {
     version: "1",
-    name: "Crypto Quiz",
+    name: "Base Quiz",
     subtitle: "Test Your Blockchain Knowledge",
     description: "A fun 5-question quiz to test your crypto and blockchain basics",
     screenshotUrls: [
@@ -32,7 +32,7 @@ export const minikitConfig = {
     tags: ["quiz", "crypto", "blockchain", "education", "game"],
     heroImageUrl: `${ROOT_URL}/cover.png`,
     tagline: "Test your crypto knowledge!",
-    ogTitle: "Crypto Quiz Challenge",
+    ogTitle: "Base Quiz Challenge",
     ogDescription: "Take this fun 5-question quiz to test your crypto and blockchain knowledge!",
     ogImageUrl: `${ROOT_URL}/cover.png`,
   },
