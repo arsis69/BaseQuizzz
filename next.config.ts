@@ -8,3 +8,7 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+// Initialize OpenNext for Cloudflare in development
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+initOpenNextCloudflareForDev();
