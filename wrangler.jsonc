@@ -17,7 +17,7 @@
 
   // Environment variables
   "vars": {
-    "NEXT_PUBLIC_URL": "https://basequiz.arsssn85.workers.dev",
+    "NEXT_PUBLIC_URL": "https://base-quizzz.arsssn85.workers.dev",
     "NEXT_PUBLIC_SUPABASE_URL": "https://oayihyumlikcccwvsybk.supabase.co",
     "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9heWloeXVtbGlrY2Njd3ZzeWJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkzNTQzMTIsImV4cCI6MjA4NDkzMDMxMn0.xRFgvoIeS99BpEX3xiFH9cETP35gHjH2u1rgm2TX_Kk",
     "NEXT_PUBLIC_ONCHAINKIT_API_KEY": "dbc04b63-1158-4d67-a4b4-51611da7fdb4",
