@@ -23,15 +23,13 @@ export default function Home() {
   const [showExplanation, setShowExplanation] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
   const router = useRouter();
 
   // Timeout for loading state (10 seconds)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (loading) {
-        console.log('[DEBUG] Loading timeout reached');
-        setLoadingTimeout(true);
+        console.log('[DEBUG] Loading timeout reached - forcing end of loading state');
         setLoading(false);
       }
     }, 10000);
