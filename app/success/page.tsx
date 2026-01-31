@@ -115,8 +115,10 @@ function SuccessContent() {
   const getButtonText = () => {
     if (isWriting) return 'WAITING FOR APPROVAL...';
     if (isConfirming) return 'CONFIRMING...';
-    if (isConfirmed) return 'CHECK-IN COMPLETE!';
-    return 'CLAIM YOUR DAILY CHECK-IN';
+    if (isConfirmed) return 'CHECK-IN COMPLETE! ✅';
+    if (canCheckIn === false) return 'ALREADY CHECKED IN TODAY ✓';
+    if (!isConnected) return 'CONNECT WALLET';
+    return 'CLAIM YOUR DAILY CHECK-IN (FREE!)';
   };
 
   const getStatusInfo = () => {
@@ -196,7 +198,7 @@ function SuccessContent() {
           <div style={{ marginTop: '15px', width: '100%' }}>
             <button
               onClick={handleCheckIn}
-              disabled={isWriting || isConfirming || isConfirmed || !isConnected}
+              disabled={isWriting || isConfirming || isConfirmed || !isConnected || canCheckIn === false}
               style={{
                 width: '100%',
                 padding: '18px 30px',
