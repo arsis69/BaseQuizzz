@@ -80,16 +80,23 @@ export default function Home() {
         const data = await getUserData(fid, username);
         console.log('[DEBUG] User data loaded:', data);
 
-        // Update username if it changed (fixes TestUser issue)
-        if (data.username !== username) {
+        // Always use the username from context (not from database)
+        // This ensures we show the real name, not cached "TestUser"
+        if (context?.user && data.username !== username) {
+          console.log('[DEBUG] Updating username from', data.username, 'to', username);
           data.username = username;
           // Import saveUserData dynamically to avoid circular dependency
           const { saveUserData } = await import('./userData');
           await saveUserData(data);
         }
 
+        // Force the correct username in display
+        if (context?.user) {
+          data.username = username;
+        }
+
         setUserData(data);
-        console.log('[DEBUG] User data state set');
+        console.log('[DEBUG] User data state set with username:', data.username);
 
         // Load daily questions
         const dailyQuestions = getDailyQuestions();
