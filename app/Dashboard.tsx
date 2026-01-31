@@ -28,50 +28,42 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
   // Did You Know state
   const [currentFact, setCurrentFact] = useState(DID_YOU_KNOW_FACTS[0]);
   const [callsId, setCallsId] = useState<string>();
-  const [totalAcknowledged, setTotalAcknowledged] = useState<bigint | null>(null);
   const [hasAcknowledgedCurrent, setHasAcknowledgedCurrent] = useState<boolean | null>(null);
   const [fetchFactsError, setFetchFactsError] = useState<string | null>(null);
 
   const isContractDeployed = DID_YOU_KNOW_CONTRACT_ADDRESS.length === 42 && DID_YOU_KNOW_CONTRACT_ADDRESS.startsWith('0x');
 
-  // Read contract data using public RPC (bypasses OnchainKit API auth issues)
-  const readContractData = useCallback(async () => {
+  // Load a random fact and check if it's acknowledged
+  const loadRandomFact = useCallback(async () => {
     if (!address || !isContractDeployed) return;
 
     try {
       setFetchFactsError(null);
-      console.log('[CONTRACT] Reading contract for fact:', currentFact.id);
-      console.log('[CONTRACT] Address:', address);
 
-      // Read total acknowledged
-      const total = await publicClient.readContract({
-        address: DID_YOU_KNOW_CONTRACT_ADDRESS as `0x${string}`,
-        abi: DID_YOU_KNOW_CONTRACT_ABI,
-        functionName: 'totalAcknowledged',
-        args: [address],
-      });
-      setTotalAcknowledged(total as bigint);
-      console.log('[CONTRACT] Total acknowledged:', total);
+      // Pick a random fact
+      const randomFactId = Math.floor(Math.random() * 20);
+      console.log('[FACT] Showing random fact:', randomFactId);
+      setCurrentFact(DID_YOU_KNOW_FACTS[randomFactId]);
 
-      // Read if current fact is acknowledged
+      // Check if this random fact is already acknowledged
       const hasAcknowledged = await publicClient.readContract({
         address: DID_YOU_KNOW_CONTRACT_ADDRESS as `0x${string}`,
         abi: DID_YOU_KNOW_CONTRACT_ABI,
         functionName: 'hasAcknowledged',
-        args: [address, BigInt(currentFact.id)],
+        args: [address, BigInt(randomFactId)],
       });
       setHasAcknowledgedCurrent(hasAcknowledged as boolean);
-      console.log('[CONTRACT] Has acknowledged current?:', hasAcknowledged);
+      console.log('[FACT] Random fact', randomFactId, 'already acknowledged?:', hasAcknowledged);
     } catch (error) {
       console.error('[CONTRACT] Error reading contract:', error);
       setFetchFactsError(error instanceof Error ? error.message : 'Failed to read contract');
     }
-  }, [address, isContractDeployed, currentFact.id]);
+  }, [address, isContractDeployed]);
 
-  // Read contract data when address or current fact changes
+  // Load random fact when address changes or on mount
   useEffect(() => {
-    readContractData();
-  }, [readContractData]);
+    loadRandomFact();
+  }, [loadRandomFact]);
 
   // sendCalls for acknowledging facts
   const {
@@ -114,31 +106,6 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
     }
   }, [acknowledgeError]);
 
-  // Manually find next unacknowledged fact when current one is acknowledged
-  const findNextUnacknowledgedFact = useCallback(async () => {
-    if (!address) return;
-
-    console.log('[FACT] Finding next unacknowledged fact...');
-
-    // Try each fact starting from 0
-    for (let i = 0; i < 20; i++) {
-      try {
-        // Skip the current fact we just acknowledged
-        if (i === currentFact.id) continue;
-
-        // We'll just cycle through facts in order
-        console.log('[FACT] Trying fact:', i);
-        setCurrentFact(DID_YOU_KNOW_FACTS[i]);
-        return;
-      } catch (err) {
-        console.error('[FACT] Error checking fact', i, err);
-      }
-    }
-
-    // If all facts checked, start from beginning
-    console.log('[FACT] All facts checked, showing fact 0');
-    setCurrentFact(DID_YOU_KNOW_FACTS[0]);
-  }, [address, currentFact.id]);
 
   const isConfirmed = callsStatus?.status === 'success';
 
@@ -153,20 +120,17 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
     }
   }, [isAcknowledging, isConfirming, isConfirmed]);
 
-  // When transaction is confirmed, refetch data and load next fact
+  // When transaction is confirmed, show another random fact
   useEffect(() => {
     if (isConfirmed) {
-      console.log('[FACT] Transaction confirmed, loading next fact...');
+      console.log('[FACT] Transaction confirmed, showing another random fact...');
 
-      const loadNextFact = async () => {
+      const reloadAfterTransaction = async () => {
         // Wait 2 seconds for blockchain to update
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Load next fact
-        await findNextUnacknowledgedFact();
-
-        // Refetch contract data
-        await readContractData();
+        // Show another random fact
+        await loadRandomFact();
 
         // Clear transaction state
         setTimeout(() => {
@@ -175,9 +139,9 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
         }, 1000);
       };
 
-      loadNextFact();
+      reloadAfterTransaction();
     }
-  }, [isConfirmed, findNextUnacknowledgedFact, readContractData]);
+  }, [isConfirmed, loadRandomFact]);
 
   const handleAcknowledgeFact = async () => {
     setDebugMessage('');
@@ -187,14 +151,15 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
       return;
     }
 
-    // Double-check we haven't already acknowledged this fact
+    // If already acknowledged, just show another random fact (no transaction needed)
     if (hasAcknowledgedCurrent === true) {
-      setDebugMessage(`❌ Already acknowledged fact #${currentFact.id}`);
+      setDebugMessage('💡 Got it! Loading another tip...');
+      await loadRandomFact();
       return;
     }
 
     try {
-      setDebugMessage(`🚀 Acknowledging fact #${currentFact.id}...`);
+      setDebugMessage(`🚀 Recording on blockchain...`);
 
       const data = encodeFunctionData({
         abi: DID_YOU_KNOW_CONTRACT_ABI,
@@ -279,13 +244,10 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
             border: '2px solid #0ea5e9',
             boxShadow: '0 4px 12px rgba(14,165,233,0.15)'
           }}>
-            <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ marginBottom: '12px' }}>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#0369a1' }}>
-                💡 Did You Know? {hasAcknowledgedCurrent && '⚠️'}
+                💡 Crypto Tips
               </h3>
-              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
-                {Number(totalAcknowledged || 0)}/20 Facts
-              </span>
             </div>
 
             {hasAcknowledgedCurrent && (
@@ -324,24 +286,24 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
             {hasAcknowledgedCurrent === true ? (
               <button
                 onClick={() => {
-                  console.log('[FACT] Manual load next fact requested');
-                  findNextUnacknowledgedFact();
-                  setDebugMessage('🔄 Loading next fact...');
+                  console.log('[FACT] User clicked to see another random fact');
+                  loadRandomFact();
+                  setDebugMessage('🔄 Loading another fact...');
                 }}
                 style={{
                   width: '100%',
                   padding: '14px',
-                  background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                  background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
                   borderRadius: '12px',
                   border: 'none',
                   color: 'white',
                   fontSize: '14px',
                   fontWeight: 'bold',
                   cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(16,185,129,0.25)',
+                  boxShadow: '0 4px 12px rgba(99,102,241,0.25)',
                 }}
               >
-                ✅ ACKNOWLEDGED - SHOW NEXT FACT
+                💡 SHOW ME ANOTHER TIP
               </button>
             ) : (
               <button
@@ -364,11 +326,12 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
                 }}
               >
                 {!isConnected ? 'CONNECT WALLET' :
-                 isAcknowledging ? 'WAITING FOR APPROVAL...' :
-                 isConfirming ? 'CONFIRMING...' :
-                 isRefetchingData ? 'LOADING NEXT FACT...' :
-                 isConfirmed ? 'ACKNOWLEDGED ✅' :
-                 'ACKNOWLEDGE (FREE!)'}
+                 isAcknowledging ? 'SIGNING...' :
+                 isConfirming ? 'SAVING ON-CHAIN...' :
+                 isRefetchingData ? 'LOADING...' :
+                 isConfirmed ? 'SAVED ✅' :
+                 hasAcknowledgedCurrent ? 'GOT IT! 👍' :
+                 'GOT IT! (FREE)'}
               </button>
             )}
 
@@ -420,20 +383,19 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
             )}
 
             {/* Debug info - shows acknowledged facts */}
-            <div style={{
-              marginTop: '10px',
-              padding: '8px',
-              background: '#f3f4f6',
-              borderRadius: '8px',
-              fontSize: '11px',
-              color: '#374151',
-            }}>
-              <div><strong>📋 Current Fact ID:</strong> {currentFact.id}</div>
-              <div><strong>📊 Total Acknowledged:</strong> {totalAcknowledged ? String(totalAcknowledged) : '0'} / 20</div>
-              <div><strong>🔍 This Fact Status:</strong> {hasAcknowledgedCurrent === true ? 'Already Done ✅' : hasAcknowledgedCurrent === false ? 'Not Done Yet' : 'Checking...'}</div>
-              {isConnected && <div><strong>👛 Wallet:</strong> {address?.slice(0, 6)}...{address?.slice(-4)}</div>}
-              {fetchFactsError && <div style={{ color: '#dc3545' }}><strong>❌ Error:</strong> {String(fetchFactsError).slice(0, 100)}</div>}
-            </div>
+            {/* Debug info - only show if there's an error */}
+            {fetchFactsError && (
+              <div style={{
+                marginTop: '10px',
+                padding: '8px',
+                background: '#fee',
+                borderRadius: '8px',
+                fontSize: '11px',
+                color: '#dc3545',
+              }}>
+                <div><strong>❌ Error:</strong> {String(fetchFactsError).slice(0, 100)}</div>
+              </div>
+            )}
           </div>
         )}
 
