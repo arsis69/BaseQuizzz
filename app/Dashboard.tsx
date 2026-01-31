@@ -1,8 +1,9 @@
 import Image from 'next/image';
 import { useState, useEffect, useCallback } from 'react';
-import { useAccount, useReadContract } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { useSendCalls, useCallsStatus } from 'wagmi/experimental';
-import { encodeFunctionData } from 'viem';
+import { encodeFunctionData, createPublicClient, http } from 'viem';
+import { base } from 'viem/chains';
 import { UserStats, hasPlayedToday, resetUserData } from './userData';
 import { DID_YOU_KNOW_FACTS } from './didYouKnowFacts';
 import { DID_YOU_KNOW_CONTRACT_ADDRESS, DID_YOU_KNOW_CONTRACT_ABI } from './contracts/didYouKnowContract';
@@ -14,6 +15,12 @@ interface DashboardProps {
   onStartQuiz: () => void;
 }
 
+// Create a public client using Base's public RPC (bypasses OnchainKit API)
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http('https://mainnet.base.org'),
+});
+
 export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
   const playedToday = hasPlayedToday(userData);
   const { address, isConnected } = useAccount();
@@ -21,39 +28,50 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
   // Did You Know state
   const [currentFact, setCurrentFact] = useState(DID_YOU_KNOW_FACTS[0]);
   const [callsId, setCallsId] = useState<string>();
+  const [totalAcknowledged, setTotalAcknowledged] = useState<bigint | null>(null);
+  const [hasAcknowledgedCurrent, setHasAcknowledgedCurrent] = useState<boolean | null>(null);
+  const [fetchFactsError, setFetchFactsError] = useState<string | null>(null);
 
   const isContractDeployed = DID_YOU_KNOW_CONTRACT_ADDRESS.length === 42 && DID_YOU_KNOW_CONTRACT_ADDRESS.startsWith('0x');
 
-  // Get total acknowledged count (this works)
-  const { data: totalAcknowledged, refetch: refetchTotalAcknowledged } = useReadContract({
-    address: DID_YOU_KNOW_CONTRACT_ADDRESS as `0x${string}`,
-    abi: DID_YOU_KNOW_CONTRACT_ABI,
-    functionName: 'totalAcknowledged',
-    args: address ? [address] : undefined,
-    query: {
-      enabled: !!address && isContractDeployed,
-    },
-  });
+  // Read contract data using public RPC (bypasses OnchainKit API auth issues)
+  const readContractData = useCallback(async () => {
+    if (!address || !isContractDeployed) return;
 
-  // Use the public mapping hasAcknowledged directly
-  const { data: hasAcknowledgedCurrent, error: fetchFactsError } = useReadContract({
-    address: DID_YOU_KNOW_CONTRACT_ADDRESS as `0x${string}`,
-    abi: DID_YOU_KNOW_CONTRACT_ABI,
-    functionName: 'hasAcknowledged',
-    args: address ? [address, BigInt(currentFact.id)] : undefined,
-    query: {
-      enabled: !!address && isContractDeployed,
-    },
-  });
+    try {
+      setFetchFactsError(null);
+      console.log('[CONTRACT] Reading contract for fact:', currentFact.id);
+      console.log('[CONTRACT] Address:', address);
 
-  // Debug contract read
+      // Read total acknowledged
+      const total = await publicClient.readContract({
+        address: DID_YOU_KNOW_CONTRACT_ADDRESS as `0x${string}`,
+        abi: DID_YOU_KNOW_CONTRACT_ABI,
+        functionName: 'totalAcknowledged',
+        args: [address],
+      });
+      setTotalAcknowledged(total as bigint);
+      console.log('[CONTRACT] Total acknowledged:', total);
+
+      // Read if current fact is acknowledged
+      const hasAcknowledged = await publicClient.readContract({
+        address: DID_YOU_KNOW_CONTRACT_ADDRESS as `0x${string}`,
+        abi: DID_YOU_KNOW_CONTRACT_ABI,
+        functionName: 'hasAcknowledged',
+        args: [address, BigInt(currentFact.id)],
+      });
+      setHasAcknowledgedCurrent(hasAcknowledged as boolean);
+      console.log('[CONTRACT] Has acknowledged current?:', hasAcknowledged);
+    } catch (error) {
+      console.error('[CONTRACT] Error reading contract:', error);
+      setFetchFactsError(error instanceof Error ? error.message : 'Failed to read contract');
+    }
+  }, [address, isContractDeployed, currentFact.id]);
+
+  // Read contract data when address or current fact changes
   useEffect(() => {
-    console.log('[CONTRACT] Reading contract for fact:', currentFact.id);
-    console.log('[CONTRACT] Address:', address);
-    console.log('[CONTRACT] Has acknowledged current?:', hasAcknowledgedCurrent);
-    console.log('[CONTRACT] Total acknowledged:', totalAcknowledged);
-    console.log('[CONTRACT] Error:', fetchFactsError);
-  }, [hasAcknowledgedCurrent, totalAcknowledged, fetchFactsError, address, currentFact.id]);
+    readContractData();
+  }, [readContractData]);
 
   // sendCalls for acknowledging facts
   const {
@@ -144,11 +162,11 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
         // Wait 2 seconds for blockchain to update
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Refetch total count
-        await refetchTotalAcknowledged();
-
         // Load next fact
         await findNextUnacknowledgedFact();
+
+        // Refetch contract data
+        await readContractData();
 
         // Clear transaction state
         setTimeout(() => {
@@ -159,7 +177,7 @@ export default function Dashboard({ userData, onStartQuiz }: DashboardProps) {
 
       loadNextFact();
     }
-  }, [isConfirmed, refetchTotalAcknowledged, findNextUnacknowledgedFact]);
+  }, [isConfirmed, findNextUnacknowledgedFact, readContractData]);
 
   const handleAcknowledgeFact = async () => {
     setDebugMessage('');
