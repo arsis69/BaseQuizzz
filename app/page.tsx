@@ -5,6 +5,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from "react";
 import { useMiniKit } from "@coinbase/onchainkit/minikit";
+import { sdk } from "@farcaster/miniapp-sdk";
 import { useRouter } from "next/navigation";
 import { minikitConfig } from "../minikit.config";
 import { getDailyQuestions, QuizQuestion } from "./quizData";
@@ -12,10 +13,18 @@ import { getUserData, recordQuizAttempt, UserStats } from "./userData";
 import Dashboard from "./Dashboard";
 import styles from "./page.module.css";
 
+interface FarcasterUser {
+  fid?: number;
+  username?: string;
+  displayName?: string;
+  pfpUrl?: string;
+}
+
 export default function Home() {
   const { isFrameReady, setFrameReady, context } = useMiniKit();
   const [view, setView] = useState<'dashboard' | 'quiz'>('dashboard');
   const [userData, setUserData] = useState<UserStats | null>(null);
+  const [farcasterUser, setFarcasterUser] = useState<FarcasterUser | null>(null);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -53,6 +62,23 @@ export default function Home() {
       // Continue anyway - don't block the app
     }
   }, [setFrameReady, isFrameReady]);
+
+  // Load Farcaster user data from SDK
+  useEffect(() => {
+    const loadFarcasterUser = async () => {
+      try {
+        const isInMiniApp = await sdk.isInMiniApp();
+        if (isInMiniApp) {
+          const sdkContext = await sdk.context;
+          console.log('[DEBUG] Farcaster SDK context:', sdkContext);
+          setFarcasterUser(sdkContext.user);
+        }
+      } catch (err) {
+        console.error('[ERROR] Failed to load Farcaster user:', err);
+      }
+    };
+    loadFarcasterUser();
+  }, []);
 
   useEffect(() => {
     // Load user data when context is available (or use default for testing)
@@ -191,9 +217,17 @@ export default function Home() {
     );
   }
 
-  // Loading state - show nothing, just wait
+  // Loading state
   if (loading || !userData) {
-    return null;
+    return (
+      <div className={styles.container}>
+        <div className={styles.content}>
+          <div className={styles.waitlistForm}>
+            <h1 className={styles.title}>Loading...</h1>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // If questions didn't load, try to load them again
@@ -210,7 +244,11 @@ export default function Home() {
     return (
       <div className={styles.container}>
         <div className={styles.content}>
-          <Dashboard userData={userData} onStartQuiz={handleStartQuiz} userContext={context} />
+          <Dashboard
+            userData={userData}
+            onStartQuiz={handleStartQuiz}
+            userContext={farcasterUser ? { user: farcasterUser } : context}
+          />
         </div>
       </div>
     );

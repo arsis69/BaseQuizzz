@@ -225,7 +225,7 @@ export default function Dashboard({ userData, onStartQuiz, userContext }: Dashbo
           }}>
             <div style={{ marginBottom: '12px' }}>
               <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#0369a1' }}>
-                💡 Crypto Tips
+                💡 Web3 Wisdom
               </h3>
             </div>
 
