@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useComposeCast } from '@coinbase/onchainkit/minikit';
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
+import { useAccount, useWriteContract, useWaitForTransactionReceipt, useReadContract, useChainId } from 'wagmi';
 import { minikitConfig } from "../../minikit.config";
 import { CHECKIN_CONTRACT_ADDRESS, CHECKIN_CONTRACT_ABI } from "../contracts/checkInContract";
 import BottomNav from "../components/BottomNav";
@@ -21,6 +21,18 @@ function SuccessContent() {
 
   const { composeCastAsync } = useComposeCast();
   const { address, isConnected } = useAccount();
+  const chainId = useChainId();
+
+  // Check if user can check in today
+  const { data: canCheckIn, isLoading: isCheckingEligibility } = useReadContract({
+    address: CHECKIN_CONTRACT_ADDRESS,
+    abi: CHECKIN_CONTRACT_ABI,
+    functionName: 'canCheckInToday',
+    args: address ? [address] : undefined,
+    query: {
+      enabled: !!address,
+    },
+  });
 
   const {
     writeContract,
@@ -76,18 +88,28 @@ function SuccessContent() {
     }
   };
 
-  const handleCheckIn = () => {
+  const handleCheckIn = async () => {
     if (!isConnected || !address) {
+      console.error('[CHECKIN] Wallet not connected');
       return;
     }
 
-    resetWrite();
+    try {
+      console.log('[CHECKIN] Starting check-in...');
+      console.log('[CHECKIN] Contract:', CHECKIN_CONTRACT_ADDRESS);
+      console.log('[CHECKIN] User address:', address);
 
-    writeContract({
-      address: CHECKIN_CONTRACT_ADDRESS,
-      abi: CHECKIN_CONTRACT_ABI,
-      functionName: 'checkIn',
-    });
+      resetWrite();
+
+      writeContract({
+        address: CHECKIN_CONTRACT_ADDRESS,
+        abi: CHECKIN_CONTRACT_ABI,
+        functionName: 'checkIn',
+        gas: 100000n, // Explicit gas limit to avoid estimation issues
+      });
+    } catch (error) {
+      console.error('[CHECKIN] Error:', error);
+    }
   };
 
   const getButtonText = () => {
@@ -99,16 +121,20 @@ function SuccessContent() {
 
   const getStatusInfo = () => {
     if (writeError) {
+      console.error('[CHECKIN] Write error:', writeError);
       return { type: 'error', message: writeError.message };
     }
     if (confirmError) {
+      console.error('[CHECKIN] Confirm error:', confirmError);
       return { type: 'error', message: confirmError.message };
     }
     if (isConfirmed) {
+      console.log('[CHECKIN] Transaction confirmed:', txHash);
       return { type: 'success', message: `Transaction confirmed! Hash: ${txHash}` };
     }
     if (txHash) {
-      return { type: 'pending', message: `Transaction sent: ${txHash}` };
+      console.log('[CHECKIN] Transaction sent:', txHash);
+      return { type: 'pending', message: `Transaction sent: ${txHash}. View on BaseScan: https://basescan.org/tx/${txHash}` };
     }
     return null;
   };
@@ -193,7 +219,7 @@ function SuccessContent() {
             </button>
 
             {/* Status display */}
-            {(statusInfo || !isConnected) && (
+            {(statusInfo || !isConnected || isCheckingEligibility) && (
               <div style={{
                 marginTop: '10px',
                 padding: '10px',
@@ -203,7 +229,16 @@ function SuccessContent() {
                 wordBreak: 'break-all'
               }}>
                 {!isConnected && <div><strong>Wallet not connected</strong></div>}
-                {isConnected && <div><strong>Wallet:</strong> {address?.slice(0, 6)}...{address?.slice(-4)}</div>}
+                {isConnected && (
+                  <>
+                    <div><strong>Wallet:</strong> {address?.slice(0, 6)}...{address?.slice(-4)}</div>
+                    <div><strong>Network:</strong> {chainId === 8453 ? 'Base Mainnet ✅' : `Chain ${chainId} ⚠️ (Should be Base: 8453)`}</div>
+                    <div><strong>Contract:</strong> {CHECKIN_CONTRACT_ADDRESS.slice(0, 6)}...{CHECKIN_CONTRACT_ADDRESS.slice(-4)}</div>
+                    {canCheckIn !== undefined && (
+                      <div><strong>Can Check In:</strong> {canCheckIn ? 'Yes ✅' : 'Already checked in today ❌'}</div>
+                    )}
+                  </>
+                )}
                 {statusInfo && (
                   <div style={{ marginTop: '5px', color: statusInfo.type === 'error' ? '#721c24' : 'inherit' }}>
                     <strong>{statusInfo.type === 'error' ? 'Error' : 'Status'}:</strong> {statusInfo.message}
